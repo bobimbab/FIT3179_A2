@@ -28,8 +28,16 @@ function loadFile() {
         sheetColumns = sheet2[0];
         sheetData = sheet2.slice(1);
 
+        // Process only Sheet 3
+        const sheet3 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[2]], { header: 1 });
+
+        // Extract column names (header row) and data
+        sheetColumns = sheet3[0];
+        sheetData3= sheet3.slice(1);
+
+
         // Initial visualization
-       // showVisualization('choropleth-map'); // Start with Choropleth Map
+        // showVisualization('choropleth-map'); // Start with Choropleth Map
     };
     reader.readAsArrayBuffer(fileInput);
 }
@@ -37,7 +45,7 @@ function loadFile() {
 function showVisualization(chartId) {
     // Update current chart ID
     currentChartId = chartId;
-    
+
     // Hide all visualizations
     document.querySelectorAll('.visualization').forEach(el => {
         el.style.display = 'none';
@@ -82,12 +90,12 @@ function updateYearDisplay() {
     if (yearDisplay) {
         yearDisplay.innerText = `Selected Year: ${currentYear}`;
     }
-    
+
     // Recreate maps with new year data
     if (document.getElementById('choropleth-map').style.display === 'block') {
         createChoroplethMap(); // Update choropleth map with new year data
     }
-    
+
     if (document.getElementById('dot-distribution-map').style.display === 'block') {
         createDotDistributionMap(); // Update dot distribution map with new year data
     }
@@ -167,9 +175,9 @@ function createChoroplethMap() {
 
             function styleFeature(feature) {
                 const stateName = feature.properties.Name;
-                const dataRow = sheetData.find(row => 
+                const dataRow = sheetData.find(row =>
                     row[sheetColumns.indexOf("subnational1")] === stateName);
-                const value = dataRow ? 
+                const value = dataRow ?
                     parseFloat(dataRow[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)]) : 0;
 
                 return {
@@ -184,22 +192,22 @@ function createChoroplethMap() {
 
             function getColor(d) {
                 return d > 10000 ? '#800026' :
-                       d > 5000  ? '#BD0026' :
-                       d > 2000  ? '#E31A1C' :
-                       d > 1000  ? '#FC4E2A' :
-                       d > 500   ? '#FD8D3C' :
-                       d > 200   ? '#FEB24C' :
-                       d > 100   ? '#FED976' :
-                                  '#FFEDA0';
+                    d > 5000 ? '#BD0026' :
+                        d > 2000 ? '#E31A1C' :
+                            d > 1000 ? '#FC4E2A' :
+                                d > 500 ? '#FD8D3C' :
+                                    d > 200 ? '#FEB24C' :
+                                        d > 100 ? '#FED976' :
+                                            '#FFEDA0';
             }
 
             choroplethLayer = L.geoJson(geoData, {
                 style: styleFeature,
                 onEachFeature: function (feature, layer) {
                     const stateName = feature.properties.Name;
-                    const dataRow = sheetData.find(row => 
+                    const dataRow = sheetData.find(row =>
                         row[sheetColumns.indexOf("subnational1")] === stateName);
-                    const value = dataRow ? 
+                    const value = dataRow ?
                         parseFloat(dataRow[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)]) : 0;
 
                     layer.bindPopup(`
@@ -214,6 +222,7 @@ function createChoroplethMap() {
         .catch(error => console.error('Error loading topology data:', error));
 }
 
+// Create Dot Distribution Map with Size Based on Hectare Loss
 function createDotDistributionMap() {
     if (!dotDistributionMap) {
         initializeMaps();
@@ -233,30 +242,48 @@ function createDotDistributionMap() {
             const subnational2Index = sheetColumns.indexOf("subnational2");
             const tcLossIndex = sheetColumns.indexOf(`tc_loss_ha_${currentYear}`);
 
-            // Group data by state (subnational1)
+            // Group data by subnational1 and subnational2
+            const combinedData = {};
+
+            sheetData3.forEach(row => {
+                const stateName = row[subnational1Index];
+                const areaName = row[subnational2Index];
+                const deforestationValue = parseFloat(row[tcLossIndex]) || 0;
+
+                const key = `${stateName}|${areaName}`; // Create a unique key for combination
+
+                if (!combinedData[key]) {
+                    combinedData[key] = {
+                        stateName,
+                        areaName,
+                        totalDeforestation: 0,
+                    };
+                }
+                combinedData[key].totalDeforestation += deforestationValue; // Aggregate values
+            });
+
+            // Group features by state for easy access
             const stateFeatures = new Map();
             geoData.features.forEach(feature => {
                 stateFeatures.set(feature.properties.Name, feature);
             });
 
-            // Define a constant medium size for all dots
-            const UNIFORM_DOT_SIZE = 5;
+            // Create markers for the aggregated data
+            Object.values(combinedData).forEach(data => {
+                const { stateName, areaName, totalDeforestation } = data;
 
-            // Process and add markers for each subnational2 area
-            sheetData.forEach(row => {
-                const stateName = row[subnational1Index];
-                const areaName = row[subnational2Index];
-                const deforestationValue = parseFloat(row[tcLossIndex]) || 0;
-
-                if (deforestationValue > 0 && stateFeatures.has(stateName)) {
+                if (totalDeforestation > 0 && stateFeatures.has(stateName)) {
                     const stateFeature = stateFeatures.get(stateName);
                     
                     // Generate a position within the state boundaries
                     const point = randomPointInPolygon(stateFeature);
                     
                     if (point) {
+                        // Calculate dot size based on total deforestation value
+                        const dotSize = Math.sqrt(totalDeforestation) / 10; // Adjust scaling factor as needed
+
                         const marker = L.circleMarker([point[1], point[0]], {
-                            radius: UNIFORM_DOT_SIZE,  // Use uniform size
+                            radius: dotSize,  // Use dynamic size based on total deforestation value
                             fillColor: "#ff0000",
                             color: "#000",
                             weight: 1,
@@ -265,8 +292,8 @@ function createDotDistributionMap() {
                         }).addTo(dotDistributionMap);
 
                         marker.bindPopup(`
-                            <strong>${stateName}</strong><br>
-                            Deforestation: ${deforestationValue.toLocaleString()} hectares
+                            <strong>${stateName} - ${areaName}</strong><br>
+                            Deforestation: ${totalDeforestation.toLocaleString()} hectares
                         `);
 
                         dotMarkers.push(marker);
@@ -286,6 +313,7 @@ function createDotDistributionMap() {
         .catch(error => console.error('Error loading topology data:', error));
 }
 
+
 // Add a legend to the maps (for uniform dot size)
 function addSimpleLegend(map) {
     // Remove existing legend if any
@@ -294,18 +322,18 @@ function addSimpleLegend(map) {
     }
 
     // Create new legend control
-    const legend = L.control({position: 'bottomright'});
+    const legend = L.control({ position: 'bottomright' });
 
-    legend.onAdd = function() {
+    legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'info legend');
-        
+
         div.innerHTML = `
             <h4>Deforestation Indicators</h4>
             <i class="circle" style="width: 10px; height: 10px;"></i> 
             Each dot represents an area with deforestation<br>
             <small>Hover over dots to see detailed values</small>
         `;
-        
+
         return div;
     };
 
@@ -314,7 +342,6 @@ function addSimpleLegend(map) {
 
     legend.addTo(map);
 }
-
 
 function randomPointInPolygon(feature) {
     const bbox = turf.bbox(feature);
@@ -327,15 +354,15 @@ function randomPointInPolygon(feature) {
         const lon = bbox[0] + Math.random() * (bbox[2] - bbox[0]);
         const lat = bbox[1] + Math.random() * (bbox[3] - bbox[1]);
         point = turf.point([lon, lat]);
-        
+
         if (turf.booleanPointInPolygon(point, feature)) {
             pointInPoly = true;
             return point.geometry.coordinates;
         }
         attempts++;
     }
-    
- 
+
+
     if (!pointInPoly) {
         const centroid = turf.centroid(feature);
         return centroid.geometry.coordinates;
@@ -344,18 +371,18 @@ function randomPointInPolygon(feature) {
 
 // Add a legend to the maps
 function addLegend(map, type) {
-    const legend = L.control({position: 'bottomright'});
+    const legend = L.control({ position: 'bottomright' });
 
-    legend.onAdd = function() {
+    legend.onAdd = function () {
         const div = L.DomUtil.create('div', 'info legend');
-        
+
         if (type === 'choropleth') {
             const grades = [0, 100, 200, 500, 1000, 2000, 5000, 10000];
-            const colors = ['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C', 
-                           '#FC4E2A', '#E31A1C', '#BD0026', '#800026'];
+            const colors = ['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C',
+                '#FC4E2A', '#E31A1C', '#BD0026', '#800026'];
 
             div.innerHTML += '<h4>Deforestation (ha)</h4>';
-            
+
             for (let i = 0; i < grades.length; i++) {
                 div.innerHTML +=
                     '<i style="background:' + colors[i] + '"></i> ' +
@@ -363,17 +390,17 @@ function addLegend(map, type) {
             }
         } else if (type === 'dot') {
             const sizes = [100, 1000, 5000, 10000];
-            
+
             div.innerHTML += '<h4>Deforestation (ha)</h4>';
-            
+
             for (let size of sizes) {
                 div.innerHTML +=
-                    '<i class="circle" style="width: ' + (Math.sqrt(size)/5) + 
-                    'px; height: ' + (Math.sqrt(size)/5) + 'px;"></i> ' +
+                    '<i class="circle" style="width: ' + (Math.sqrt(size) / 5) +
+                    'px; height: ' + (Math.sqrt(size) / 5) + 'px;"></i> ' +
                     size + '<br>';
             }
         }
-        
+
         return div;
     };
 
@@ -381,42 +408,101 @@ function addLegend(map, type) {
     legend.addTo(map);
 }
 
+const coordinates = {
+    "Johor": { latitude: 1.4854, longitude: 103.7618 },
+    "Kedah": { latitude: 6.1184, longitude: 100.3681 },
+    "Kelantan": { latitude: 6.1254, longitude: 102.2381 },
+    "Kuala Lumpur": { latitude: 3.1390, longitude: 101.6869 },
+    "Melaka": { latitude: 2.1896, longitude: 102.2501 },
+    "Negeri Sembilan": { latitude: 2.7252, longitude: 101.9424 },
+    "Pahang": { latitude: 3.8126, longitude: 103.3256 },
+    "Penang": { latitude: 5.4164, longitude: 100.3327 },
+    "Perak": { latitude: 4.5975, longitude: 101.0901 },
+    "Perlis": { latitude: 6.4408, longitude: 100.1983 },
+    "Selangor": { latitude: 3.0738, longitude: 101.5183 },
+    "Terengganu": { latitude: 5.3117, longitude: 103.1324 },
+    "Sabah": { latitude: 5.9788, longitude: 116.0753 },
+    "Sarawak": { latitude: 1.5533, longitude: 110.3592 }
+};
 
-// Create Bubble Chart with Larger Bubbles
+
+// Function to process data and aggregate by subnational and year
+function aggregateDataBySubnationalAndYear(sheetData, sheetColumns, currentYear) {
+    const aggregatedData = {};
+
+    // Iterate through each row and aggregate tc_loss by subnational for the current year
+    sheetData.forEach(row => {
+        const subnational = row[sheetColumns.indexOf("subnational1")];
+        const tc_loss = row[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)];
+
+        // Check if subnational exists in the aggregatedData object
+        if (!aggregatedData[subnational]) {
+            aggregatedData[subnational] = {
+                subnational: subnational,
+                tc_loss: 0, // Initialize the cumulative tc_loss
+                latitude: Math.random() * 180 - 90,  // Random latitude for demo
+                longitude: Math.random() * 360 - 180 // Random longitude for demo
+            };
+        }
+
+        // Sum tc_loss for the same subnational
+        aggregatedData[subnational].tc_loss += tc_loss;
+    });
+
+    // Convert the aggregated data object back to an array
+    return Object.values(aggregatedData);
+}
+
 function createBubbleChart() {
     vegaEmbed('#bubble-chart', {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "width": 800, // Set a larger width
         "height": 600, // Set a larger height
         "data": {
-            "values": sheetData.map(row => ({
-                "subnational": row[sheetColumns.indexOf("subnational1")],
-                "tc_loss": row[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)],
-                "latitude": Math.random() * 180 - 90,  // Random latitude for demo
-                "longitude": Math.random() * 360 - 180 // Random longitude for demo
-            }))
+            "values": sheetData.map(row => {
+                const subnational = row[sheetColumns.indexOf("subnational1")];
+                const coords = coordinates[subnational] || { latitude: 0, longitude: 0 }; // Use real latitude and longitude
+                return {
+                    "subnational": subnational,
+                    "tc_loss": row[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)],
+                    "latitude": coords.latitude,
+                    "longitude": coords.longitude
+                };
+            })
         },
         "mark": "circle",
         "encoding": {
-            "latitude": { "field": "latitude", "type": "quantitative" },
-            "longitude": { "field": "longitude", "type": "quantitative" },
-            "size": { 
-                "field": "tc_loss", 
-                "type": "quantitative",
-                "scale": { "range": [50, 2000] }  // Increased bubble size range (50 to 2000)
+            "x": {
+                "field": "longitude",
+                "type": "quantitative",  // X-axis based on longitude
+                "axis": { "title": "Longitude", "grid": true }  // Enable grid lines
             },
-            "color": { 
-                "field": "subnational", 
-                "type": "nominal", 
-                "legend": { "title": "State / Subnational" }
+            "y": {
+                "field": "latitude",
+                "type": "quantitative",  // Y-axis based on latitude
+                "axis": { "title": "Latitude", "grid": true }  // Enable grid lines
+            },
+            "size": {
+                "field": "tc_loss",
+                "type": "quantitative",
+                "scale": { "range": [50, 2000] },  // Bubble size range based on tree cover loss
+                "legend": { "title": "Tree Cover Loss (ha)" }  // Size legend for tc_loss
+            },
+            "color": {
+                "field": "subnational",
+                "type": "nominal",
+                "legend": { "title": "State / Subnational" }  // Color coding by state
             },
             "tooltip": [
                 { "field": "subnational", "type": "nominal", "title": "State" },
-                { "field": "tc_loss", "type": "quantitative", "title": "Tree Cover Loss (ha)" }
+                { "field": "tc_loss", "type": "quantitative", "title": "Tree Cover Loss (ha)" },
+                { "field": "latitude", "type": "quantitative", "title": "Latitude" },
+                { "field": "longitude", "type": "quantitative", "title": "Longitude" }
             ]
         }
     });
 }
+
 
 // Create Stacked Area Chart with Thin and Wide Frame
 function createStackedAreaChart() {
@@ -442,19 +528,19 @@ function createStackedAreaChart() {
         },
         "mark": "area",
         "encoding": {
-            "x": { 
-                "field": "year", 
+            "x": {
+                "field": "year",
                 "title": "Year"
             },
-            "y": { 
-                "field": "tc_loss_ha", 
-                "type": "quantitative", 
-                "stack": "normalize", 
+            "y": {
+                "field": "tc_loss_ha",
+                "type": "quantitative",
+                "stack": "normalize",
                 "title": "Tree Cover Loss (ha)"
             },
-            "color": { 
-                "field": "subnational", 
-                "type": "nominal", 
+            "color": {
+                "field": "subnational",
+                "type": "nominal",
                 "legend": { "title": "State / Subnational" }
             },
             "tooltip": [
