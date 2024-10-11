@@ -1,32 +1,92 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-}
-
-h1 {
-    text-align: center;
-}
 
 .chart-container {
-    margin: 20px;
-    padding: 10px;
-    border: 1px solid #ccc;
+    margin-top: 2rem;
 }
+
 .visualization {
+    margin-bottom: 2rem;
     display: none;
-    width: 200%;
-    height: 500px;
+    /* Initially hide all visualizations */
 }
+
 #controls {
-    margin: 20px;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
 }
 
-#bubble-chart {
-    width: 800px; /* Larger width */
-    height: 600px; /* Larger height */
+#year-slider {
+    width: 100%;
 }
 
-#stacked-area-chart {
-    width: 800px; /* Larger width */
-    height: 600px; /* Larger height */
+/* Add styles for the map containers */
+#choropleth-map,
+#dot-distribution-map {
+    height: 600px;
+    width: 800px;
+}
+
+.legend {
+    background: white;
+    padding: 10px;
+    border-radius: 3px;
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+}
+
+.legend .circle {
+    border-radius: 50%;
+    background: #ff0000;
+}
+
+/* Styling for the Sankey diagram */
+#sankey-diagram svg {
+    font-family: 'Arial', sans-serif;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+}
+
+.links path {
+    fill: none;
+    stroke: #69b3a2;
+    stroke-opacity: 0.5;
+    transition: stroke-opacity 0.3s;
+}
+
+.links path:hover {
+    stroke-opacity: 1;
+}
+
+.nodes rect {
+    fill: #69b3a2;
+    stroke: #000;
+    stroke-width: 1px;
+    transition: fill 0.3s;
+}
+
+.nodes rect:hover {
+    fill: #457b9d;
+}
+
+.nodes text {
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 8px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
 }

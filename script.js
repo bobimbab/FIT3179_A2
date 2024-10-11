@@ -3,85 +3,78 @@ let choroplethMap = null;
 let dotDistributionMap = null;
 let choroplethLayer = null;
 let dotMarkers = [];
-let currentYear = 2023; // Set current year or adjust as necessary
-let sheetColumns = [];
-let sheetData = [];
+let currentYear = 2000; // Set current year or adjust as necessary
+let sheetColumns3 = [];
+let sheetColumns5 = [];
+let sheetData5 = [];
+let sheetData3 = [];
 let currentChartId = '';
 
-// Function to handle Excel file upload and process the Excel file
+const startYear = 2000; // Define the starting year
+const endYear = 2023;   // Define the ending year
+
+// Global variables to hold the loaded sheet data
+let sheet1, sheet2, sheet3, sheet4, sheet5, sheet6, sheet7;
+
+
+// Function to load and process the Excel file
 function loadFile() {
-    const fileInput = document.getElementById('file-input').files[0];
-    if (!fileInput) {
-        alert("Please select a file first!");
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function (event) {
-        const data = new Uint8Array(event.target.result);
-        const workbook = XLSX.read(data, { type: "array" });
-
-        // Process only Sheet 2
-        const sheet2 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]], { header: 1 });
-
-        // Extract column names (header row) and data
-        sheetColumns = sheet2[0];
-        sheetData = sheet2.slice(1);
-
-        // Process only Sheet 3
-        const sheet3 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[2]], { header: 1 });
-
-        // Extract column names (header row) and data
-        sheetColumns = sheet3[0];
-        sheetData3= sheet3.slice(1);
+    // Fetch the Excel file
+    fetch('source/MYS.xlsx')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.arrayBuffer(); // Convert to ArrayBuffer
+        })
+        .then(data => {
+            const workbook = XLSX.read(data, { type: "array" });
 
 
-        // Initial visualization
-        // showVisualization('choropleth-map'); // Start with Choropleth Map
-    };
-    reader.readAsArrayBuffer(fileInput);
-}
-// Function to show selected visualization
-function showVisualization(chartId) {
-    // Update current chart ID
-    currentChartId = chartId;
+            // Process Sheet 1 (Country tree cover loss)
+            sheet1 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+            //console.log("Sheet 1 Data (Country Tree Loss):", sheet1);
 
-    // Hide all visualizations
-    document.querySelectorAll('.visualization').forEach(el => {
-        el.style.display = 'none';
-    });
+            // Process Sheet 2 (Country carbon data)
+            sheet2 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[1]], { header: 1 });
+            // console.log("Sheet 2 Data (Country Carbon):", sheet2);
 
-    // Show selected visualization
-    const selectedChart = document.getElementById(chartId);
-    if (selectedChart) {
-        selectedChart.style.display = 'block';
-    }
+            // Process Sheet 3 (Subnational 1 tree cover loss)
+            sheet3 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[2]], { header: 1 });
+            sheetData3 = sheet3; // Set global sheetData to Sheet 5 data
+            sheetColumns3 = sheetData3[0];
+            // console.log("Sheet 3 Data (Subnational 1 Tree Loss):", sheet3);
 
-    // Update the selected visualization
-    updateVisualization(chartId);
+            // Process Sheet 4 (Subnational 1 carbon data)
+            sheet4 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[3]], { header: 1 });
+            //console.log("Sheet 4 Data (Subnational 1 Carbon):", sheet4);
+
+            // Process Sheet 5 (Subnational 2 tree cover loss)
+            sheet5 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[4]], { header: 1 });
+            sheetData5 = sheet5; // Set global sheetData to Sheet 5 data
+            sheetColumns5 = sheetData5[0]; // Use the first row as column headers
+           // console.log("Sheet 5 Data (Subnational 2 Tree Loss):", sheet5);
+
+            // Process Sheet 6 (Subnational 2 carbon data)
+            sheet6 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[5]], { header: 1 });
+           // console.log("Sheet 6 Data (Subnational 2 Carbon):", sheet6);
+
+            // Process Sheet 7 (Tree loss cause)
+            sheet7 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[6]], { header: 1 });
+          //  console.log("Sheet 7 Data (Tree Loss Causes):", sheet7); // Corrected log message
+
+
+        })
+        .catch(error => console.error("Error loading file:", error));
 }
 
-// Function to update visualization based on current year and data
-function updateVisualization(chartId) {
-    if (!sheetData || !sheetColumns) return;
 
-    switch (chartId) {
-        case 'bubble-chart':
-            createBubbleChart();
-            break;
-        case 'stacked-area-chart':
-            createStackedAreaChart();
-            break;
-        case 'choropleth-map':
-            createChoroplethMap();
-            break;
-        case 'dot-distribution-map':
-            createDotDistributionMap();
-            break;
-        case 'sankey-diagram':
-            createSankeyDiagram();
-            break;
-    }
+function getYearColumnIndex(selectedYear) {
+    const columnName = `tc_loss_ha_${selectedYear}`.trim(); // Trim any spaces
+    const normalizedColumns = sheetColumns3.map(col => col.trim()); // Normalize the sheet columns
+    const index = normalizedColumns.indexOf(columnName);
+    console.log(`Index for ${columnName}: ${index}`); // Log to see the index found
+    return index; // This returns the index of the column
 }
 
 // Update year display
@@ -93,17 +86,15 @@ function updateYearDisplay() {
 
     // Recreate maps with new year data
     if (document.getElementById('choropleth-map').style.display === 'block') {
-        createChoroplethMap(); // Update choropleth map with new year data
+        // createChoroplethMap(currentYear); // Uncomment if needed
     }
 
     if (document.getElementById('dot-distribution-map').style.display === 'block') {
-        createDotDistributionMap(); // Update dot distribution map with new year data
+        createDotDistributionMap(currentYear); // Pass the currentYear to the function
     }
 }
 
-
 function initializeMaps(mapType) {
-    // Initialize or destroy Choropleth Map based on the selected map
     if (mapType === 'choropleth') {
         if (!choroplethMap) {
             choroplethMap = L.map('choropleth-map').setView([4.2105, 108.9758], 6);
@@ -111,74 +102,552 @@ function initializeMaps(mapType) {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(choroplethMap);
         } else {
-            choroplethMap.invalidateSize();  // Fix rendering issue when map is shown
+            choroplethMap.invalidateSize();
         }
-    } else if (choroplethMap) {
-        choroplethMap.remove(); // Destroy Choropleth Map when switching
-        choroplethMap = null;
-    }
-
-    // Initialize or destroy Dot Distribution Map based on the selected map
-    if (mapType === 'dotDistribution') {
+    } else if (mapType === 'dotDistribution') {
         if (!dotDistributionMap) {
             dotDistributionMap = L.map('dot-distribution-map').setView([4.2105, 108.9758], 6);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(dotDistributionMap);
         } else {
-            dotDistributionMap.invalidateSize();  // Fix rendering issue when map is shown
+            dotDistributionMap.invalidateSize();
         }
-    } else if (dotDistributionMap) {
-        dotDistributionMap.remove();  // Destroy Dot Distribution Map when switching
-        dotDistributionMap = null;
     }
 }
 
 
-function showChoroplethMap() {
-    document.getElementById('choropleth-map').style.display = 'block';
-    document.getElementById('dot-distribution-map').style.display = 'none';
-    document.getElementById('bubble-chart').style.display = 'none';
-    document.getElementById('stacked-area-chart').style.display = 'none';
-    document.getElementById('sankey-diagram').style.display = 'none';
+// Create BubbleChart
+function createBubbleChart() { 
+    
+    const sheet7Headers = sheet7[0];
+    const driverIndex = sheet7Headers.findIndex(header => header.includes('driver'));
+    const yearIndex = sheet7Headers.findIndex(header => header.includes('year'));
+    const subnationalIndex = sheet7Headers.findIndex(header => header.includes('subnational'));
+    const lossAreaIndex = sheet7Headers.findIndex(header => header.includes('ha'));
 
-    initializeMaps('choropleth');
-    createChoroplethMap();
+    // Create merged data array
+    const mergedData = [];
+
+    // Process sheet7 to get all causes for each subnational region
+    for (let i = 1; i < sheet7.length; i++) {
+        const row = sheet7[i];
+        const year = row[yearIndex];
+        const subnational = row[subnationalIndex];
+        const cause = row[driverIndex] || 'Unknown'; // Handle unknown causes
+        const lossArea = parseFloat(row[lossAreaIndex]) || 0;
+
+        // Filter for the current year
+        if (subnational && year && year == currentYear) {
+            mergedData.push({
+                subnational: subnational,
+                tc_loss: lossArea,
+                cause: cause
+            });
+        }
+    }
+
+    // Process sheet3 to ensure we are capturing the total loss per region
+    const sheet3Headers = sheet3[0];
+    const yearColumnIndex = currentYear - 2001 + 2; // Adjust based on your data structure
+
+    for (let i = 1; i < sheet3.length; i++) {
+        const row = sheet3[i];
+        const subnational = row[1];
+        const tc_loss = parseFloat(row[yearColumnIndex]);
+
+        // Check if this subnational already has a cause entry in mergedData
+        const existingEntry = mergedData.find(d => d.subnational === subnational);
+
+        // If the entry exists, aggregate the loss; if not, add it as 'Unknown'
+        if (existingEntry) {
+            existingEntry.tc_loss += tc_loss; // Aggregate tree cover loss
+        } else if (tc_loss > 0) {
+            mergedData.push({
+                subnational: subnational,
+                tc_loss: tc_loss,
+                cause: 'Unknown' // Default cause if none exists
+            });
+        }
+    }
+
+    // Log mergedData to check if causes are correctly being captured
+    console.log("Merged Data for Bubble Chart:", mergedData);
+
+    // Create the bubble chart using Vega-Lite
+    vegaEmbed('#bubble-chart', {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "width": 800,
+        "height": 600,
+        "data": {
+            "values": mergedData
+        },
+        "mark": {
+            "type": "circle",
+            "tooltip": true // Enable tooltip
+        },
+        "encoding": {
+            "x": {
+                "field": "subnational",
+                "type": "nominal",
+                "axis": {
+                    "title": "Region / Subnational",
+                    "grid": false,
+                    "labelAngle": -45
+                }
+            },
+            "y": {
+                "field": "tc_loss", // Adjust to use rate_of_deforestation if calculated
+                "type": "quantitative",
+                "axis": { "title": "Tree Cover Loss (ha/year)", "grid": true }
+            },
+            "size": {
+                "field": "tc_loss",
+                "type": "quantitative",
+                "scale": { "range": [50, 2000] }, // Adjust size range as needed
+                "legend": { "title": "Tree Cover Loss (ha)" }
+            },
+            "color": {
+                "field": "cause",
+                "type": "nominal",
+                "legend": { "title": "Cause of Deforestation" },
+                "scale": {
+                    "domain": [
+                        "Commodity driven deforestation",
+                        "Shifting agriculture",
+                        "Forestry",
+                        "Wildfire",
+                        "Urbanization",
+                        "Unknown"
+                    ],
+                    "range": [
+                        "#ff9999", // Commodity driven deforestation
+                        "#66b3ff", // Shifting agriculture
+                        "#99ff99", // Forestry
+                        "#ffcc99", // Wildfire
+                        "#ff99cc", // Urbanization
+                        "#cccccc"  // Unknown
+                    ]
+                }
+            },
+            "tooltip": [
+                { "field": "subnational", "type": "nominal", "title": "Region / Subnational" },
+                { "field": "tc_loss", "type": "quantitative", "title": "Tree Cover Loss (ha)", "format": ".2f" },
+                { "field": "cause", "type": "nominal", "title": "Cause" }
+            ]
+        }
+    }).catch(console.error);
 }
 
-function showDotDistributionMap() {
-    document.getElementById('dot-distribution-map').style.display = 'block';
-    document.getElementById('choropleth-map').style.display = 'none';
-    document.getElementById('bubble-chart').style.display = 'none';
-    document.getElementById('stacked-area-chart').style.display = 'none';
-    document.getElementById('sankey-diagram').style.display = 'none';
 
-    initializeMaps('dotDistribution');
-    createDotDistributionMap();
+function  createStackedAreaChart() {
+    // Check if required sheets are loaded
+    if (!sheet3 || !sheet7) {
+        console.error("Required sheets are not loaded yet");
+        return;
+    }
+
+    // Log sample data from both sheets for debugging
+    console.log("Sheet 3 data sample:", sheet3.slice(0, 5));
+    console.log("Sheet 7 data sample:", sheet7.slice(0, 5));
+
+    const causesData = {};
+
+    // Process Sheet 3 - Tree cover loss by subnational area
+    for (let i = 1; i < sheet3.length; i++) {
+        const row = sheet3[i];
+        if (!row || row.length < 2) continue;
+
+        const state = row[1];
+        if (!state) continue;
+
+        for (let year = 2001; year <= 2023; year++) {
+            const columnIndex = year - 2001 + 2; // Adjusting index based on year
+            const treeLossHa = parseFloat(row[columnIndex]);
+
+            if (isNaN(treeLossHa)) continue;
+
+            if (!causesData[year]) {
+                causesData[year] = {};
+            }
+            if (!causesData[year][state]) {
+                causesData[year][state] = {
+                    totalLoss: 0,
+                    causes: {}
+                };
+            }
+
+            // Accumulate total loss per state and year
+            causesData[year][state].totalLoss += treeLossHa;
+        }
+    }
+
+    // Log intermediate state data
+    console.log("Processed causesData:", JSON.stringify(causesData, null, 2));
+
+    // Process Sheet 7 - Tree loss causes
+    const sheet7Headers = sheet7[0];
+    const yearIndex = sheet7Headers.findIndex(header => header.includes('year'));
+    const driverIndex = sheet7Headers.findIndex(header => header.includes('driver'));
+    const lossIndex = sheet7Headers.findIndex(header => header.includes('ha'));
+
+    console.log("Sheet 7 column indices - Year:", yearIndex, "Driver:", driverIndex, "Loss:", lossIndex);
+
+    // Process each row in Sheet 7
+    for (let i = 1; i < sheet7.length; i++) {
+        const row = sheet7[i];
+        if (!row || row.length <= Math.max(yearIndex, driverIndex, lossIndex)) continue;
+
+        const year = parseInt(row[yearIndex]);
+        const cause = row[driverIndex];
+        const lossHa = parseFloat(row[lossIndex]);
+
+        if (isNaN(year) || !cause || isNaN(lossHa) || !causesData[year]) continue;
+
+        // Distribute the loss across all states
+        Object.keys(causesData[year]).forEach(state => {
+            if (!causesData[year][state].causes[cause]) {
+                causesData[year][state].causes[cause] = 0;
+            }
+
+            // Calculate total loss for the year across all states
+            const totalYearLoss = Object.values(causesData[year])
+                .reduce((sum, stateData) => sum + stateData.totalLoss, 0);
+
+            if (totalYearLoss > 0) {
+                // Proportionally distribute the loss based on each state's total loss
+                const proportionOfTotalLoss = causesData[year][state].totalLoss / totalYearLoss;
+                causesData[year][state].causes[cause] += lossHa * proportionOfTotalLoss;
+            }
+        });
+    }
+
+    // Convert causesData into lineData
+    const lineData = [];
+    const statesInLineData = new Set();
+
+    Object.entries(causesData).forEach(([year, yearData]) => {
+        Object.entries(yearData).forEach(([state, stateData]) => {
+            Object.entries(stateData.causes).forEach(([cause, tcLossHa]) => {
+                if (tcLossHa > 0) {
+                    lineData.push({
+                        year: parseInt(year),
+                        subnational: state,
+                        cause: cause,
+                        tc_loss_ha: tcLossHa
+                    });
+                    statesInLineData.add(state);
+                }
+            });
+        });
+    });
+
+    // Log final line data for debugging
+    console.log("Final lineData:", JSON.stringify(lineData, null, 2));
+    console.log("States in final line data:", Array.from(statesInLineData));
+    console.log("Total number of data points:", lineData.length);
+
+    // Check if there's any data to render
+    if (lineData.length === 0) {
+        console.warn("No data available for the line chart.");
+        return;
+    }
+
+    // Updated chart configuration with new styling
+    vegaEmbed('#stacked-area-chart', {
+        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+        "width": 1200,
+        "height": 400,
+        "data": {
+            "values": lineData
+        },
+        "mark": {
+            "type": "line", // Changed from "area" to "line"
+            "point": true,  // Optional: add points to the line chart
+            "strokeWidth": 6 // Make the line bold
+        },
+        "encoding": {
+            "x": {
+                "field": "year",
+                "type": "ordinal",
+                "title": null  // Remove axis title
+            },
+            "y": {
+                "field": "tc_loss_ha",
+                "type": "quantitative",
+                "title": null,  // Remove axis title
+                "axis": { "grid": false }  // Remove grid lines
+            },
+            "color": {
+                "field": "subnational",
+                "type": "nominal",
+                "scale": {
+                    "range": [
+                        "#00BFFF",  // Vivid blue
+                        "#FFA500",  // Bright orange
+                        "#32CD32",  // Bright green
+                        "#FF4500",  // Bright red
+                        "#FFD700",  // Bright yellow
+                        "#FF69B4",  // Bright pink
+                        "#A9A9A9",  // Dark gray
+                        "#FFDEAD"   // Navajo white
+                    ]
+                },
+                "legend": {
+                    "title": null,
+                    "orient": "bottom",
+                    "columns": 4
+                }
+            },
+            "tooltip": [
+                { "field": "year", "title": "Year" },
+                { "field": "tc_loss_ha", "title": "Tree Cover Loss (ha)", "format": ".2f" },
+                { "field": "subnational", "title": "State" },
+                { "field": "cause", "title": "Cause of Loss" }  // Add cause to tooltip
+            ]
+        },
+        "config": {
+            "view": { "stroke": null },  // Remove chart border
+            "axis": {
+                "labelFont": "Arial",
+                "labelFontSize": 12
+            }
+        }
+    }).catch(console.error);
 }
 
 
-// createChoroplethMap function
+function createSankeyDiagram() {
+    console.log("Starting createSankeyDiagram function");
+
+    // Ensure data is loaded
+    if (!sheet3 || !sheet4) {
+        console.error("Data not loaded. Please run loadFile() first.");
+        return;
+    }
+
+    // Initialize objects to hold causes and impacts
+    const causes = {};
+    const impacts = {
+        "Tree Cover Loss": 0,
+        "Carbon Emissions": 0
+    };
+
+    // Process Sheet 3 (Subnational 1 tree cover loss)
+    for (let i = 1; i < sheet3.length; i++) {
+        const row = sheet3[i];
+        const subnational = row[1]; // Subnational area
+        const tc_loss_ha = parseFloat(row[21]); // Tree cover loss (assuming it's the 22nd column)
+
+        if (subnational && !isNaN(tc_loss_ha)) {
+            // Sum up the tree cover loss by subnational area
+            if (!causes[subnational]) {
+                causes[subnational] = { treeLoss: 0, carbonEmissions: 0 };
+            }
+            causes[subnational].treeLoss += tc_loss_ha;
+        }
+    }
+
+    // Process Sheet 4 (Subnational 1 carbon data)
+    for (let i = 1; i < sheet4.length; i++) {
+        const row = sheet4[i];
+        const subnational = row[1]; // Subnational area
+        const carbonEmissions = parseFloat(row[6]); // Carbon emissions (assuming it's the 7th column)
+
+        if (subnational && !isNaN(carbonEmissions)) {
+            // Sum up the carbon emissions by subnational area
+            if (!causes[subnational]) {
+                causes[subnational] = { treeLoss: 0, carbonEmissions: 0 };
+            }
+            causes[subnational].carbonEmissions += carbonEmissions;
+        }
+    }
+
+    // Calculate total impacts
+    Object.keys(causes).forEach((subnational) => {
+        impacts["Tree Cover Loss"] += causes[subnational].treeLoss || 0;
+        impacts["Carbon Emissions"] += causes[subnational].carbonEmissions || 0;
+    });
+
+    // Prepare data for Sankey diagram
+    const nodes = [];
+    const links = [];
+
+    // Add causes (subnational areas) as source nodes
+    const causeIndices = {};
+    Object.keys(causes).forEach((subnational, index) => {
+        causeIndices[subnational] = index; // Keep track of the indices
+        nodes.push({ name: subnational });
+    });
+
+    // Add impacts as target nodes
+    nodes.push({ name: "Tree Cover Loss" });
+    nodes.push({ name: "Carbon Emissions" });
+
+    const treeCoverLossIndex = nodes.length - 2;
+    const carbonEmissionsIndex = nodes.length - 1;
+
+    // Create links from causes to impacts
+    Object.keys(causes).forEach((subnational) => {
+        const index = causeIndices[subnational]; // Retrieve index
+        if (causes[subnational].treeLoss > 0) {
+            links.push({
+                source: index,
+                target: treeCoverLossIndex,
+                value: causes[subnational].treeLoss
+            });
+        }
+        if (causes[subnational].carbonEmissions > 0) {
+            links.push({
+                source: index,
+                target: carbonEmissionsIndex,
+                value: causes[subnational].carbonEmissions
+            });
+        }
+    });
+
+    console.log("Data processed. Nodes:", nodes);
+    console.log("Links:", links);
+
+    // Set up SVG dimensions and margins
+    const margin = { top: 10, right: 30, bottom: 30, left: 40 };
+    const width = 1000 - margin.left - margin.right;
+    const height = 600 - margin.top - margin.bottom;
+
+    // Remove any existing SVG
+    d3.select("#sankey-diagram svg").remove();
+
+    // Create an SVG element
+    const svg = d3.select("#sankey-diagram")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+    if (svg.empty()) {
+        console.error("Failed to create SVG element");
+        return;
+    }
+
+    console.log("SVG created successfully");
+
+    // Create a Sankey generator
+    const sankey = d3.sankey()
+        .nodeWidth(15)
+        .nodePadding(10)
+        .extent([[1, 1], [width - 1, height - 1]]);
+
+    // Generate the Sankey data
+    const graph = sankey({
+        nodes: nodes.map(d => Object.assign({}, d)),
+        links: links.map(d => Object.assign({}, d))
+    });
+
+    console.log("Sankey layout calculated");
+
+    // Create a tooltip
+    const tooltip = d3.select("#tooltip");
+
+    // Draw the links
+    svg.append("g")
+        .attr("class", "links")
+        .selectAll("path")
+        .data(graph.links)
+        .enter()
+        .append("path")
+        .attr("d", d3.sankeyLinkHorizontal())
+        .attr("stroke-width", d => Math.max(1, d.width))
+        .attr("stroke", "#000")
+        .attr("fill", "none")
+        .attr("opacity", 0.5)
+        .on("mouseover", function(event, d) {
+            tooltip.html(`Source: ${nodes[d.source].name}<br>Target: ${nodes[d.target].name}<br>Value: ${d.value}`)
+                .style("visibility", "visible");
+        })
+        .on("mousemove", function(event) {
+            tooltip.style("top", (event.pageY - 10) + "px")
+                .style("left", (event.pageX + 10) + "px");
+        })
+        .on("mouseout", function() {
+            tooltip.style("visibility", "hidden");
+        });
+
+    console.log("Links drawn");
+
+    // Draw the nodes
+    const node = svg.append("g")
+        .attr("class", "nodes")
+        .selectAll("g")
+        .data(graph.nodes)
+        .enter()
+        .append("g");
+
+    node.append("rect")
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("width", d => d.x1 - d.x0)
+        .attr("fill", "#ccc")
+        .attr("stroke", "#000")
+        .on("mouseover", function(event, d) {
+            tooltip.html(`Name: ${d.name}<br>Value: ${d.value || 0}`)
+                .style("visibility", "visible");
+        })
+        .on("mousemove", function(event) {
+            tooltip.style("top", (event.pageY - 10) + "px")
+                .style("left", (event.pageX + 10) + "px");
+        })
+        .on("mouseout", function() {
+            tooltip.style("visibility", "hidden");
+        });
+
+    node.append("text")
+        .attr("x", d => d.x0 - 6)
+        .attr("y", d => (d.y1 + d.y0) / 2)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "end")
+        .text(d => d.name)
+        .filter(d => d.x0 < width / 2)
+        .attr("x", d => d.x1 + 6)
+        .attr("text-anchor", "start");
+
+    console.log("Nodes drawn");
+    console.log("Sankey diagram creation completed");
+}
+
+// Update the createChoroplethMap function
 function createChoroplethMap() {
+    console.log("Creating choropleth map for year:", currentYear);
+    
     if (!choroplethMap) {
-        initializeMaps();
+        initializeMaps('choropleth');
     }
 
     if (choroplethLayer) {
         choroplethMap.removeLayer(choroplethLayer);
     }
 
+    const yearColumnIndex = getYearColumnIndex(currentYear); // Get index for current year
+    console.log("Year Column Index:", yearColumnIndex); // Log the index for verification
+
     fetch('data/states-topo.json')
         .then(response => response.json())
         .then(topoData => {
             const geoData = topojson.feature(topoData, topoData.objects.layer1);
-
+            
             function styleFeature(feature) {
                 const stateName = feature.properties.Name;
-                const dataRow = sheetData.find(row =>
-                    row[sheetColumns.indexOf("subnational1")] === stateName);
-                const value = dataRow ?
-                    parseFloat(dataRow[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)]) : 0;
+                
+                // Find the corresponding row for the state in sheetData3
+                const dataRow = sheetData3.find(row => 
+                    row[sheetColumns3.indexOf("subnational1")] === stateName);
+                
+                let value = 0;
+                if (dataRow && yearColumnIndex !== -1) {
+                    value = parseFloat(dataRow[yearColumnIndex]) || 0; // Get the value for the selected year
+                    console.log(`Value for ${stateName} in ${currentYear}:`, value); // Log the retrieved value
+                }
 
                 return {
                     fillColor: getColor(value),
@@ -192,27 +661,31 @@ function createChoroplethMap() {
 
             function getColor(d) {
                 return d > 10000 ? '#800026' :
-                    d > 5000 ? '#BD0026' :
-                        d > 2000 ? '#E31A1C' :
-                            d > 1000 ? '#FC4E2A' :
-                                d > 500 ? '#FD8D3C' :
-                                    d > 200 ? '#FEB24C' :
-                                        d > 100 ? '#FED976' :
-                                            '#FFEDA0';
+                       d > 5000  ? '#BD0026' :
+                       d > 2000  ? '#E31A1C' :
+                       d > 1000  ? '#FC4E2A' :
+                       d > 500   ? '#FD8D3C' :
+                       d > 200   ? '#FEB24C' :
+                       d > 100   ? '#FED976' :
+                                  '#FFEDA0';
             }
 
             choroplethLayer = L.geoJson(geoData, {
                 style: styleFeature,
-                onEachFeature: function (feature, layer) {
+                onEachFeature: function(feature, layer) {
                     const stateName = feature.properties.Name;
-                    const dataRow = sheetData.find(row =>
-                        row[sheetColumns.indexOf("subnational1")] === stateName);
-                    const value = dataRow ?
-                        parseFloat(dataRow[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)]) : 0;
+                    const yearColumnIndex = getYearColumnIndex(currentYear);
+                    const dataRow = sheetData3.find(row => 
+                        row[sheetColumns3.indexOf("subnational1")] === stateName);
+                    
+                    let value = 0;
+                    if (dataRow && yearColumnIndex !== -1) {
+                        value = parseFloat(dataRow[yearColumnIndex]) || 0;
+                    }
 
                     layer.bindPopup(`
                         <strong>${stateName}</strong><br>
-                        Deforestation: ${value.toLocaleString()} hectares
+                        Deforestation in ${currentYear}: ${value.toLocaleString()} hectares
                     `);
                 }
             }).addTo(choroplethMap);
@@ -222,30 +695,43 @@ function createChoroplethMap() {
         .catch(error => console.error('Error loading topology data:', error));
 }
 
+
 // Create Dot Distribution Map with Size Based on Hectare Loss
 function createDotDistributionMap() {
+    // Ensure the map is initialized before proceeding
     if (!dotDistributionMap) {
-        initializeMaps();
+        initializeMaps('dotDistribution'); // Pass the correct map type
     }
 
     // Clear existing markers
     dotMarkers.forEach(marker => dotDistributionMap.removeLayer(marker));
     dotMarkers = [];
 
+    // Fetch the topology data
     fetch('data/states-topo.json')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(topoData => {
             const geoData = topojson.feature(topoData, topoData.objects.layer1);
-            
-            // Process data by subnational2 areas
-            const subnational1Index = sheetColumns.indexOf("subnational1");
-            const subnational2Index = sheetColumns.indexOf("subnational2");
-            const tcLossIndex = sheetColumns.indexOf(`tc_loss_ha_${currentYear}`);
+
+            // Process data by subnational2 areas using Sheet 5
+            const subnational1Index = sheetColumns5.indexOf("subnational1");
+            const subnational2Index = sheetColumns5.indexOf("subnational2");
+            const tcLossIndex = sheetColumns5.indexOf(`tc_loss_ha_${currentYear}`);
+
+            // Log indices for debugging
+            console.log("Subnational1 Index:", subnational1Index);
+            console.log("Subnational2 Index:", subnational2Index);
+            console.log("Tree Cover Loss Index for year", currentYear, ":", tcLossIndex);
 
             // Group data by subnational1 and subnational2
             const combinedData = {};
 
-            sheetData3.forEach(row => {
+            sheetData5.forEach(row => {
                 const stateName = row[subnational1Index];
                 const areaName = row[subnational2Index];
                 const deforestationValue = parseFloat(row[tcLossIndex]) || 0;
@@ -262,6 +748,9 @@ function createDotDistributionMap() {
                 combinedData[key].totalDeforestation += deforestationValue; // Aggregate values
             });
 
+            // Log combined data for debugging
+            console.log("Combined Data:", combinedData);
+
             // Group features by state for easy access
             const stateFeatures = new Map();
             geoData.features.forEach(feature => {
@@ -274,29 +763,31 @@ function createDotDistributionMap() {
 
                 if (totalDeforestation > 0 && stateFeatures.has(stateName)) {
                     const stateFeature = stateFeatures.get(stateName);
-                    
+
                     // Generate a position within the state boundaries
                     const point = randomPointInPolygon(stateFeature);
-                    
+
                     if (point) {
                         // Calculate dot size based on total deforestation value
                         const dotSize = Math.sqrt(totalDeforestation) / 10; // Adjust scaling factor as needed
 
-                        const marker = L.circleMarker([point[1], point[0]], {
-                            radius: dotSize,  // Use dynamic size based on total deforestation value
-                            fillColor: "#ff0000",
-                            color: "#000",
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        }).addTo(dotDistributionMap);
+                        if (dotSize > 0) { // Ensure size is valid
+                            const marker = L.circleMarker([point[1], point[0]], {
+                                radius: dotSize,  // Use dynamic size based on total deforestation value
+                                fillColor: "#ff0000",
+                                color: "#000",
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            }).addTo(dotDistributionMap);
 
-                        marker.bindPopup(`
-                            <strong>${stateName} - ${areaName}</strong><br>
-                            Deforestation: ${totalDeforestation.toLocaleString()} hectares
-                        `);
+                            marker.bindPopup(`
+                                <strong>${stateName} - ${areaName}</strong><br>
+                                Deforestation: ${totalDeforestation.toLocaleString()} hectares
+                            `);
 
-                        dotMarkers.push(marker);
+                            dotMarkers.push(marker);
+                        }
                     }
                 }
             });
@@ -306,517 +797,106 @@ function createDotDistributionMap() {
                 const group = L.featureGroup(dotMarkers);
                 dotDistributionMap.fitBounds(group.getBounds());
             }
-
-            // Add or update legend
-            addSimpleLegend(dotDistributionMap);
         })
-        .catch(error => console.error('Error loading topology data:', error));
+        .catch(error => console.error("Error fetching topology data:", error));
+}
+
+// Random point in polygon function
+function randomPointInPolygon(polygon, attempts = 10) {
+    const coords = polygon.geometry.coordinates;
+
+    // Choose a random polygon
+    let chosenPolygon;
+    if (polygon.geometry.type === 'Polygon') {
+        chosenPolygon = coords;
+    } else if (polygon.geometry.type === 'MultiPolygon') {
+        chosenPolygon = coords[Math.floor(Math.random() * coords.length)];
+    }
+
+    const [minX, minY, maxX, maxY] = boundingBox(chosenPolygon[0]);
+    let point = randomPointInBounds(minX, minY, maxX, maxY);
+
+    // Check if the point is inside the polygon
+    if (pointInPolygon(point, chosenPolygon[0])) {
+        return point; // Return if point is valid
+    }
+
+    // If not valid and we have attempts left, try again
+    if (attempts > 0) {
+        return randomPointInPolygon(polygon, attempts - 1); // Reduce attempts
+    }
+
+    console.warn("Could not find a valid point within polygon after 10 attempts.");
+    return null; // Return null if no valid point was found
+}
+
+// Function to create a bounding box for the polygon
+function boundingBox(coordinates) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    coordinates.forEach(([x, y]) => {
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+    });
+    
+    return [minX, minY, maxX, maxY];
+}
+
+// Function to check if a point is inside a polygon
+function pointInPolygon(point, polygon) {
+    let x = point[0], y = point[1];
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        let xi = polygon[i][0], yi = polygon[i][1];
+        let xj = polygon[j][0], yj = polygon[j][1];
+
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    
+    return inside;
+}
+
+// Function to generate a random point within a bounding box
+function randomPointInBounds(minX, minY, maxX, maxY) {
+    const x = Math.random() * (maxX - minX) + minX;
+    const y = Math.random() * (maxY - minY) + minY;
+    return [x, y];
 }
 
 
-// Add a legend to the maps (for uniform dot size)
-function addSimpleLegend(map) {
-    // Remove existing legend if any
-    if (map.legendControl) {
-        map.removeControl(map.legendControl);
-    }
 
-    // Create new legend control
-    const legend = L.control({ position: 'bottomright' });
-
-    legend.onAdd = function () {
-        const div = L.DomUtil.create('div', 'info legend');
-
-        div.innerHTML = `
-            <h4>Deforestation Indicators</h4>
-            <i class="circle" style="width: 10px; height: 10px;"></i> 
-            Each dot represents an area with deforestation<br>
-            <small>Hover over dots to see detailed values</small>
-        `;
-
-        return div;
-    };
-
-    // Save legend reference to the map so it can be removed later
-    map.legendControl = legend;
-
-    legend.addTo(map);
-}
-
-function randomPointInPolygon(feature) {
-    const bbox = turf.bbox(feature);
-    let point;
-    let pointInPoly = false;
-    let attempts = 0;
-    const maxAttempts = 100;
-
-    while (!pointInPoly && attempts < maxAttempts) {
-        const lon = bbox[0] + Math.random() * (bbox[2] - bbox[0]);
-        const lat = bbox[1] + Math.random() * (bbox[3] - bbox[1]);
-        point = turf.point([lon, lat]);
-
-        if (turf.booleanPointInPolygon(point, feature)) {
-            pointInPoly = true;
-            return point.geometry.coordinates;
-        }
-        attempts++;
-    }
-
-
-    if (!pointInPoly) {
-        const centroid = turf.centroid(feature);
-        return centroid.geometry.coordinates;
-    }
-}
-
-// Add a legend to the maps
-function addLegend(map, type) {
-    const legend = L.control({ position: 'bottomright' });
-
-    legend.onAdd = function () {
-        const div = L.DomUtil.create('div', 'info legend');
-
-        if (type === 'choropleth') {
-            const grades = [0, 100, 200, 500, 1000, 2000, 5000, 10000];
-            const colors = ['#FFEDA0', '#FED976', '#FEB24C', '#FD8D3C',
-                '#FC4E2A', '#E31A1C', '#BD0026', '#800026'];
-
-            div.innerHTML += '<h4>Deforestation (ha)</h4>';
-
-            for (let i = 0; i < grades.length; i++) {
-                div.innerHTML +=
-                    '<i style="background:' + colors[i] + '"></i> ' +
-                    grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
-            }
-        } else if (type === 'dot') {
-            const sizes = [100, 1000, 5000, 10000];
-
-            div.innerHTML += '<h4>Deforestation (ha)</h4>';
-
-            for (let size of sizes) {
-                div.innerHTML +=
-                    '<i class="circle" style="width: ' + (Math.sqrt(size) / 5) +
-                    'px; height: ' + (Math.sqrt(size) / 5) + 'px;"></i> ' +
-                    size + '<br>';
-            }
-        }
-
-        return div;
-    };
-
-
-    legend.addTo(map);
-}
-
-const coordinates = {
-    "Johor": { latitude: 1.4854, longitude: 103.7618 },
-    "Kedah": { latitude: 6.1184, longitude: 100.3681 },
-    "Kelantan": { latitude: 6.1254, longitude: 102.2381 },
-    "Kuala Lumpur": { latitude: 3.1390, longitude: 101.6869 },
-    "Melaka": { latitude: 2.1896, longitude: 102.2501 },
-    "Negeri Sembilan": { latitude: 2.7252, longitude: 101.9424 },
-    "Pahang": { latitude: 3.8126, longitude: 103.3256 },
-    "Penang": { latitude: 5.4164, longitude: 100.3327 },
-    "Perak": { latitude: 4.5975, longitude: 101.0901 },
-    "Perlis": { latitude: 6.4408, longitude: 100.1983 },
-    "Selangor": { latitude: 3.0738, longitude: 101.5183 },
-    "Terengganu": { latitude: 5.3117, longitude: 103.1324 },
-    "Sabah": { latitude: 5.9788, longitude: 116.0753 },
-    "Sarawak": { latitude: 1.5533, longitude: 110.3592 }
-};
-
-
-// Function to process data and aggregate by subnational and year
-function aggregateDataBySubnationalAndYear(sheetData, sheetColumns, currentYear) {
-    const aggregatedData = {};
-
-    // Iterate through each row and aggregate tc_loss by subnational for the current year
-    sheetData.forEach(row => {
-        const subnational = row[sheetColumns.indexOf("subnational1")];
-        const tc_loss = row[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)];
-
-        // Check if subnational exists in the aggregatedData object
-        if (!aggregatedData[subnational]) {
-            aggregatedData[subnational] = {
-                subnational: subnational,
-                tc_loss: 0, // Initialize the cumulative tc_loss
-                latitude: Math.random() * 180 - 90,  // Random latitude for demo
-                longitude: Math.random() * 360 - 180 // Random longitude for demo
-            };
-        }
-
-        // Sum tc_loss for the same subnational
-        aggregatedData[subnational].tc_loss += tc_loss;
-    });
-
-    // Convert the aggregated data object back to an array
-    return Object.values(aggregatedData);
-}
-
-function createBubbleChart() {
-    vegaEmbed('#bubble-chart', {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "width": 800, // Set a larger width
-        "height": 600, // Set a larger height
-        "data": {
-            "values": sheetData.map(row => {
-                const subnational = row[sheetColumns.indexOf("subnational1")];
-                const coords = coordinates[subnational] || { latitude: 0, longitude: 0 }; // Use real latitude and longitude
-                return {
-                    "subnational": subnational,
-                    "tc_loss": row[sheetColumns.indexOf(`tc_loss_ha_${currentYear}`)],
-                    "latitude": coords.latitude,
-                    "longitude": coords.longitude
-                };
-            })
-        },
-        "mark": "circle",
-        "encoding": {
-            "x": {
-                "field": "longitude",
-                "type": "quantitative",  // X-axis based on longitude
-                "axis": { "title": "Longitude", "grid": true }  // Enable grid lines
-            },
-            "y": {
-                "field": "latitude",
-                "type": "quantitative",  // Y-axis based on latitude
-                "axis": { "title": "Latitude", "grid": true }  // Enable grid lines
-            },
-            "size": {
-                "field": "tc_loss",
-                "type": "quantitative",
-                "scale": { "range": [50, 2000] },  // Bubble size range based on tree cover loss
-                "legend": { "title": "Tree Cover Loss (ha)" }  // Size legend for tc_loss
-            },
-            "color": {
-                "field": "subnational",
-                "type": "nominal",
-                "legend": { "title": "State / Subnational" }  // Color coding by state
-            },
-            "tooltip": [
-                { "field": "subnational", "type": "nominal", "title": "State" },
-                { "field": "tc_loss", "type": "quantitative", "title": "Tree Cover Loss (ha)" },
-                { "field": "latitude", "type": "quantitative", "title": "Latitude" },
-                { "field": "longitude", "type": "quantitative", "title": "Longitude" }
-            ]
-        }
-    });
-}
-
-
-// Create Stacked Area Chart with Thin and Wide Frame
-function createStackedAreaChart() {
-    const yearColumns = sheetColumns.filter(col => col.startsWith("tc_loss_ha_"));
-    const stackData = [];
-
-    sheetData.forEach(row => {
-        yearColumns.forEach((yearCol) => {
-            stackData.push({
-                "subnational": row[sheetColumns.indexOf("subnational1")],
-                "year": yearCol.replace("tc_loss_ha_", ""),  // Extract year
-                "tc_loss_ha": row[sheetColumns.indexOf(yearCol)]
-            });
-        });
-    });
-
-    vegaEmbed('#stacked-area-chart', {
-        "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "width": 1200,  // Set a wider frame
-        "height": 400,  // Set a thinner frame
-        "data": {
-            "values": stackData
-        },
-        "mark": "area",
-        "encoding": {
-            "x": {
-                "field": "year",
-                "title": "Year"
-            },
-            "y": {
-                "field": "tc_loss_ha",
-                "type": "quantitative",
-                "stack": "normalize",
-                "title": "Tree Cover Loss (ha)"
-            },
-            "color": {
-                "field": "subnational",
-                "type": "nominal",
-                "legend": { "title": "State / Subnational" }
-            },
-            "tooltip": [
-                { "field": "year", "title": "Year" },
-                { "field": "tc_loss_ha", "title": "Tree Cover Loss (ha)" },
-                { "field": "subnational", "title": "State" }
-            ]
-        }
-    });
-}
-
-// Create Interactive Sankey Diagram
-function createSankeyDiagram() {
-    if (!sheetData || !sheetColumns) {
-        console.error("Sheet data or columns are not available");
-        return;
-    }
-
-    // Process data for Sankey diagram
-    const sankeyData = {
-        nodes: [],
-        links: []
-    };
-
-    const subnationalIndex = sheetColumns.indexOf("subnational1");
-    const tcLossIndex = sheetColumns.indexOf(`tc_loss_ha_${currentYear}`);
-
-    if (subnationalIndex === -1 || tcLossIndex === -1) {
-        console.error("Required columns not found in the data");
-        return;
-    }
-
-    // Create nodes for subnational regions
-    const subnationalSet = new Set();
-    let nodeIndex = 0;
-    const nodeMap = new Map();
-
-    // First pass: collect all subnational regions
-    sheetData.forEach(row => {
-        const subnational = row[subnationalIndex];
-        if (subnational && !nodeMap.has(subnational)) {
-            nodeMap.set(subnational, nodeIndex++);
-            subnationalSet.add(subnational);
-        }
-    });
-
-    // Create nodes array
-    nodeMap.forEach((index, name) => {
-        sankeyData.nodes.push({ id: index, name: name });
-    });
-
-    // Add a target node for "Hectar Loss"
-    sankeyData.nodes.push({ id: nodeIndex, name: "Hectar Loss" });
-
-    // Create links
-    sheetData.forEach(row => {
-        const subnational = row[subnationalIndex];
-        const tcLoss = parseFloat(row[tcLossIndex]);
-
-        if (subnational && !isNaN(tcLoss)) {
-            const sourceIndex = nodeMap.get(subnational);
-
-            // Using the actual tcLoss as the target value
-            sankeyData.links.push({
-                source: sourceIndex,
-                target: nodeIndex, // This will refer to the link target
-                value: tcLoss
-            });
-        }
-    });
-
-    // Set up SVG
-    const margin = { top: 10, right: 10, bottom: 10, left: 10 };
-    const width = 1200 - margin.left - margin.right; // Increased width
-    const height = 600 - margin.top - margin.bottom;
-
-    const svg = d3.select("#sankey-diagram")
-        .html("") // Clear previous content
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Set up scales
-    const x = d3.scaleLinear().range([0, width]);
-    const y = d3.scalePoint().range([0, height]).padding(0.5);
-
-    // Set up node positions
-    const nodeWidth = 15;
-    sankeyData.nodes.forEach(node => {
-        node.x = node.name === "Hectar Loss" ? width / 2 - nodeWidth / 2 : 0; // Center Hectar Loss
-        node.dx = nodeWidth;
-    });
-
-    y.domain(sankeyData.nodes.map(d => d.id));
-    sankeyData.nodes.forEach(node => {
-        node.y = y(node.id);
-    });
-
-    // Create a color scale based on the value of the links
-    const color = d3.scaleSequential(d3.interpolateRdYlBu)
-        .domain([0, d3.max(sankeyData.links, d => d.value)]);
-
-    // Create drag behavior for the "Hectar Loss" node
-    const drag = d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
-
-    // Draw links
-    const link = svg.append("g")
-        .selectAll(".link")
-        .data(sankeyData.links)
-        .enter().append("path")
-        .attr("class", "link")
-        .attr("d", linkPath)
-        .attr("fill", "none")
-        .attr("stroke", d => color(d.value)) // Set the link color based on value
-        .attr("stroke-opacity", 0.8)
-        .attr("stroke-width", d => Math.max(1, Math.sqrt(d.value) / 10))
-        .on("mouseover", highlightLink) // Attach mouseover event
-        .on("mouseout", unhighlightLink); // Attach mouseout event
-
-    // Draw nodes
-    const node = svg.append("g")
-        .selectAll(".node")
-        .data(sankeyData.nodes)
-        .enter().append("rect")
-        .attr("class", "node")
-        .attr("x", d => d.x)
-        .attr("y", d => d.y - 5)
-        .attr("height", 10)
-        .attr("width", nodeWidth)
-        .attr("fill", d => d.name === "Hectar Loss" ? "#d9534f" : color(d.name)) // Different color for Hectar Loss
-        .call(drag); // Make Hectar Loss draggable
-
-    // Add labels
-    const label = svg.append("g")
-        .selectAll(".label")
-        .data(sankeyData.nodes)
-        .enter().append("text")
-        .attr("class", "label")
-        .attr("x", d => d.x < width / 2 ? d.x + nodeWidth + 6 : d.x - 6)
-        .attr("y", d => d.y)
-        .attr("dy", "0.35em")
-        .attr("text-anchor", d => d.x < width / 2 ? "start" : "end")
-        .text(d => d.name)
-        .style("font-size", "10px");
-
-    // Add tooltips
-    const tooltip = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0)
-        .style("position", "absolute")
-        .style("background-color", "white")
-        .style("border", "solid")
-        .style("border-width", "1px")
-        .style("border-radius", "5px")
-        .style("padding", "10px");
-
-    // Hover effects
-    node.on("mouseover", highlightNode)
-        .on("mouseout", unhighlightNode);
-
-    // Helper functions
-    function linkPath(d) {
-        return d3.linkHorizontal()({
-            source: [sankeyData.nodes[d.source].x + nodeWidth, sankeyData.nodes[d.source].y],
-            target: [sankeyData.nodes[d.target].x, sankeyData.nodes[d.target].y]
-        });
-    }
-
-    function dragstarted(event, d) {
-        d3.select(this).raise().attr("stroke", "black");
-    }
-
-    function dragged(event, d) {
-        // Allow dragging of the "Hectar Loss" node
-        if (d.name === "Hectar Loss") {
-            d.y = Math.max(0, Math.min(height, event.y)); // Keep within SVG boundaries
-            d3.select(this).attr("y", d.y - 5);
-            link.attr("d", linkPath); // Update link positions
-            label.filter(p => p === d).attr("y", d.y);
-        }
-    }
-
-    function dragended(event, d) {
-        d3.select(this).attr("stroke", null);
-    }
-
-    function highlightNode(event, d) {
-        const connectedLinks = sankeyData.links.filter(l => l.source === d.id || l.target === d.id);
-        const connectedNodes = new Set(connectedLinks.flatMap(l => [l.source, l.target]));
-
-        node.style("opacity", n => connectedNodes.has(n.id) ? 1 : 0.1);
-        link.style("opacity", l => l.source === d.id || l.target === d.id ? 1 : 0.1);
-        label.style("opacity", n => connectedNodes.has(n.id) ? 1 : 0.1);
-
-        tooltip.transition()
-            .duration(200)
-            .style("opacity", .9);
-        tooltip.html(`<strong>${d.name}</strong><br/>Total Loss: ${d3.sum(connectedLinks, l => l.value).toLocaleString()} ha`)
-            .style("left", (event.pageX + 10) + "px") // Offset tooltip slightly
-            .style("top", (event.pageY - 28) + "px");
-    }
-
-    function unhighlightNode() {
-        node.style("opacity", 1);
-        link.style("opacity", 0.8);
-        label.style("opacity", 1);
-        tooltip.transition()
-            .duration(500)
-            .style("opacity", 0);
-    }
-
-    function highlightLink(event, d) {
-        node.style("opacity", n => n.id === d.source || n.id === d.target ? 1 : 0.1);
-        link.style("opacity", l => l === d ? 1 : 0.5); // Slightly dim others
-        label.style("opacity", n => n.id === d.source || n.id === d.target ? 1 : 0.1);
-
-        tooltip.transition()
-            .duration(200)
-            .style("opacity", .9);
-        tooltip.html(`<strong>${sankeyData.nodes[d.source].name}</strong> to <strong>${sankeyData.nodes[d.target].name}</strong><br/>Loss: ${d.value.toLocaleString()} ha`)
-            .style("left", (event.pageX + 10) + "px") // Slightly offset the tooltip from cursor
-            .style("top", (event.pageY - 28) + "px");
-    }
-
-    function unhighlightLink() {
-        node.style("opacity", 1);
-        link.style("opacity", 0.8);
-        label.style("opacity", 1);
-        tooltip.transition()
-            .duration(500)
-            .style("opacity", 0);
-    }
-}
-
-
-// Event listener for file upload
-document.getElementById('file-input').addEventListener('change', loadFile);
-
-// // Event listener for year selection
-// document.querySelectorAll('input[name="year"]').forEach(input => {
-//     input.addEventListener('change', (event) => {
-//         currentYear = parseInt(event.target.value);
-//         updateYearDisplay();
-//         updateVisualization('choropleth-map');
-//         updateVisualization('dot-distribution-map');
-//     });
-// });
-
+// Update the year slider event listener
 document.getElementById('year-slider').addEventListener('input', (event) => {
     currentYear = parseInt(event.target.value);
     updateYearDisplay();
-    updateVisualization(currentChartId);  // Ensure the chart updates with the new year
+    createBubbleChart();
+    createStackedAreaChart();
+    createChoroplethMap();  
+    createDotDistributionMap();
+    createSankeyDiagram();
 });
 
 
+// Automatically load the file when the page loads
+window.onload = loadFile, showAllVisualizations();
 
-// Event Listeners
-document.addEventListener('DOMContentLoaded', function () {
-    const buttons = {
-        'show-bubble-chart': 'bubble-chart',
-        'show-stacked-area-chart': 'stacked-area-chart',
-        'show-choropleth-map': 'choropleth-map',
-        'show-dot-distribution-map': 'dot-distribution-map',
-        'show-sankey-diagram': 'sankey-diagram'
-    };
+// Function to show all visualizations
+function showAllVisualizations() {
+    // Show all visualizations at once
+    document.getElementById('bubble-chart').style.display = 'block';
+    document.getElementById('stacked-area-chart').style.display = 'block';
+    document.getElementById('choropleth-map').style.display = 'block';
+    document.getElementById('dot-distribution-map').style.display = 'block';
+    document.getElementById('sankey-diagram').style.display = 'block';
 
-    Object.entries(buttons).forEach(([buttonId, chartId]) => {
-        const button = document.getElementById(buttonId);
-        if (button) {
-            button.addEventListener('click', () => showVisualization(chartId));
-        }
-    });
-});
-
+    // // Initialize and create each chart
+    createBubbleChart();
+    createStackedAreaChart();
+   createChoroplethMap(currentYear);  // Ensure currentYear is passed where necessary
+    createDotDistributionMap(currentYear);
+    createSankeyDiagram();
+}

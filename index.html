@@ -8,6 +8,7 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
 
     <!-- Other libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -15,59 +16,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/5.6.0/vega-lite.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/6.21.0/vega-embed.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+    <script src="https://unpkg.com/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
 
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-    <style>
-        .chart-container {
-            margin-top: 2rem;
-        }
 
-        .visualization {
-            margin-bottom: 2rem;
-            display: none;
-            /* Initially hide all visualizations */
-        }
-
-        #controls {
-            background-color: #f8f9fa;
-            padding: 1rem;
-            border-radius: 0.25rem;
-            margin-bottom: 1rem;
-        }
-
-        #year-slider {
-            width: 100%;
-        }
-
-        #choropleth-map,
-        #dot-distribution-map {
-            height: 600px;
-            width: 800px;
-        }
-
-        .legend {
-            background: white;
-            padding: 10px;
-            border-radius: 3px;
-        }
-
-        .legend i {
-            width: 18px;
-            height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.7;
-        }
-
-        .legend .circle {
-            border-radius: 50%;
-            background: #075af4;
-        }
-    </style>
 </head>
 
 <body class="container py-4">
@@ -76,33 +31,21 @@
     <div id="controls" class="card">
         <div class="card-body">
             <div class="mb-3">
-                <label for="file-input" class="form-label">Choose Excel File:</label>
-                <input type="file" class="form-control" id="file-input" accept=".xlsx,.xls">
-            </div>
-
-            <div class="mb-3">
                 <label for="year-slider" class="form-label">Select Year:</label>
-                <input type="range" class="form-range" id="year-slider" min="2000" max="2023" value="2000">
-                <p class="mt-2" id="year-display">Selected Year: 2000</p>
-            </div>
-
-            <div class="btn-group d-flex flex-wrap" role="group">
-                <button id="show-bubble-chart" class="btn btn-primary m-1">Bubble Chart</button>
-                <button id="show-stacked-area-chart" class="btn btn-primary m-1">Stacked Area Chart</button>
-                <button onclick="showChoroplethMap()" class="btn btn-primary m-1">Show Choropleth Map</button>
-                <button onclick="showDotDistributionMap()" class="btn btn-primary m-1">Show Dot Distribution Map</button>
-                <button id="show-sankey-diagram" class="btn btn-primary m-1">Sankey Diagram</button>
+                <input type="range" class="form-range" id="year-slider" min="2001" max="2023" value="2001">
+                <p class="mt-2" id="year-display">Selected Year: 2001</p>
             </div>
         </div>
+
     </div>
 
-    <div class="chart-container">
-        <div id="bubble-chart" class="visualization"></div>
-        <div id="stacked-area-chart" class="visualization"></div>
-        <div id="sankey-diagram" class="visualization"></div>
-        <div id="choropleth-map" class="visualization"></div>
-        <div id="dot-distribution-map" class="visualization"></div>
-    </div>
+    <div id="bubble-chart" class="visualization" style="display: block;"></div>
+    <div id="stacked-area-chart" class="visualization" style="display: block;"></div>
+    <div id="choropleth-map" class="visualization" style="display: block;"></div>
+    <div id="dot-distribution-map" class="visualization" style="display: block;"></div>
+    <div id="sankey-diagram" class="visualization" style="display: block;"></div>
+
+
 
     <!-- Bootstrap JavaScript Bundle with Popper -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
