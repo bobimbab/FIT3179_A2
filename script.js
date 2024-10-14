@@ -9,6 +9,7 @@ let sheetColumns5 = [];
 let sheetData5 = [];
 let sheetData3 = [];
 let currentChartId = '';
+let randomPointCache = {}; // Cache for random points in polygons
 
 const startYear = 2000; // Define the starting year
 const endYear = 2023;   // Define the ending year
@@ -73,7 +74,6 @@ function loadFile() {
         })
         .catch(error => console.error("Error loading file:", error));
 }
-
 
 function getYearColumnIndex(selectedYear) {
     const columnName = `tc_loss_ha_${selectedYear}`.trim(); // Trim any spaces
@@ -600,6 +600,7 @@ function createSankeyDiagram() {
     console.log("Sankey diagram creation completed");
 }
 
+
 // Update the createChoroplethMap function
 function createChoroplethMap() {
     console.log("Creating choropleth map for year:", currentYear);
@@ -707,6 +708,7 @@ function createChoroplethMap() {
         .catch(error => console.error('Error loading topology data:', error));
 }
 
+
 // Create Dot Distribution Map with Size Based on Hectare Loss
 function createDotDistributionMap() {
     // Ensure the map is initialized before proceeding
@@ -779,12 +781,18 @@ function createDotDistributionMap() {
 
                 if (totalDeforestation > 0 && stateFeatures.has(stateName)) {
                     const stateFeature = stateFeatures.get(stateName);
+                    const cacheKey = `${stateName}_${areaName}_${currentYear}`;
 
-                    // Generate a position within the state boundaries
-                    const point = randomPointInPolygon(stateFeature);
+                    // Check if the point is already in the cache
+                    let point = randomPointCache[cacheKey];
+
+                    // Generate a random point if it's not cached yet
+                    if (!point) {
+                        point = randomPointInPolygon(stateFeature);
+                        randomPointCache[cacheKey] = point;  // Cache the point
+                    }
 
                     if (point) {
-                        // Calculate dot size based on total deforestation value
                         const dotSize = Math.sqrt(totalDeforestation) / 10; // Adjust scaling factor as needed
 
                         if (dotSize > 0) { // Ensure size is valid
@@ -797,10 +805,10 @@ function createDotDistributionMap() {
                                 fillOpacity: 0.8
                             }).addTo(dotDistributionMap);
 
-                            marker.bindPopup(`
-                                <strong>${stateName} - ${areaName}</strong><br>
-                                Deforestation: ${totalDeforestation.toLocaleString()} hectares
-                            `);
+                            marker.bindPopup(
+                                `<strong>${stateName} - ${areaName}</strong><br>
+                                Deforestation: ${totalDeforestation.toLocaleString()} hectares`
+                            );
 
                             dotMarkers.push(marker);
                         }
