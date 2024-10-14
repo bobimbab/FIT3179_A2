@@ -26,9 +26,14 @@
 </head>
 
 <body class="container py-4">
-    <h1 class="mb-4">Deforestation Data Visualization</h1>
 
-    <div id="controls" class="card">
+    <!-- Logo and Title -->
+    <div class="d-flex align-items-center mb-4">
+        <img src="logo.png" alt="Deforestation Logo" style="width: 130px; height: 100px;" class="me-3">
+        <h1>Deforestation in Malaysia</h1>
+    </div>
+
+    <div id="controls" class="card mb-4">
         <div class="card-body">
             <div class="mb-3">
                 <label for="year-slider" class="form-label">Select Year:</label>
@@ -45,7 +50,7 @@
         <div class="card">
             <div class="card-body">
                 <h2>Choropleth Map</h2>
-                <p>The choropleth map illustrates the extent of deforestation across different regions in the world.</p>
+                <p>This map showcases Malaysia's deforestation rates. Regions with higher deforestation are shaded darker, helping highlight areas of concern. In Malaysia, is especially  <b>prevalent in Sarawak and Sabah</b>, where much of the logging occurs due to <b>palm oil plantations</b>.</p>
                 <div id="choropleth-map" class="visualization" style="display: block;"></div>
             </div>
         </div>
@@ -56,7 +61,7 @@
         <div class="card">
             <div class="card-body">
                 <h2>Dot Distribution Map</h2>
-                <p>This map shows the distribution of deforestation events globally using dots for each incident.</p>
+                <p>Each dot on the map represents the tree cover loss in hectares for that specific city or state. In Malaysia, you will notice <b>clusters of deforestation activities in Borneo</b>, primarily due to the expansion of agricultural land for palm oil production.</p>
                 <div id="dot-distribution-map" class="visualization" style="display: block;"></div>
             </div>
         </div>
@@ -67,8 +72,11 @@
         <div class="card">
             <div class="card-body">
                 <h2>Bubble Chart</h2>
-                <p>This chart shows the relationship between forest coverage and deforestation rates over time.</p>
+                <p>The bubble chart reveals the correlation of tree cover loss due to many factors over the years. In Malaysia, forest cover has declined due to <b>commodity driven deforestation, shifting agriculture, forestry, wildfire, and urbanization </b>despite efforts for reforestation.</p>
                 <div id="bubble-chart" class="visualization" style="display: block;"></div>
+                <p class="text-muted">
+                    A significant portion of deforestation events are marked as <b>'unknown.'</b> This indicates gaps in data collection and reporting, highlighting the need for more accurate and transparent tracking mechanisms in certain regions. These 'unknown' causes may be linked to <b> undocumented activities, such as illegal logging or unregulated agricultural expansion</b>. The lack of clear information in these areas makes it difficult to understand the true impact and scale of deforestation. Improving data collection and enforcement of reporting requirements is crucial to addressing these gaps, particularly in regions where deforestation drivers are harder to monitor.
+                </p>
             </div>
         </div>
     </div>
@@ -78,7 +86,7 @@
         <div class="card">
             <div class="card-body">
                 <h2>Line Chart</h2>
-                <p>This chart visualizes deforestation trends by region over the selected period.</p>
+                <p>This line chart presents deforestation trends across states in Malaysia. Notice the continuous deforestation trends in Malaysia, over the years. While there are some reforestation efforts, the <b>overall rate of forest loss in Malaysia remains alarming</b>.</p>
                 <div id="line-chart" class="visualization" style="display: block;"></div>
             </div>
         </div>
@@ -89,7 +97,7 @@
         <div class="card">
             <div class="card-body">
                 <h2>Sankey Diagram</h2>
-                <p>The Sankey diagram represents the flow of resources related to deforestation, such as timber, land, and carbon emissions.</p>
+                <p>The Sankey diagram shows the flow of carbon emission due to deforestation in different states in Malaysia throughout the years. In Malaysia, the state that has produces the <b>most carbon emission from deforestation is Sarawak</b>.</p>
                 <div id="sankey-diagram" class="visualization" style="display: block;"></div>
             </div>
         </div>
