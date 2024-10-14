@@ -16,15 +16,33 @@
     overflow: hidden; /* Prevent content overflow */
 }
 
+/* Ensure the controls container stays fixed at the top */
 #controls {
-    background-color: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.25rem;
-    margin-bottom: 1rem;
+    position: fixed;
+    top: 20px; /* Adjust the distance from the top of the page */
+    right: 20px; /* Adjust the distance from the right */
+    z-index: 1000; /* Ensure it stays above other elements */
+    background-color: rgba(255, 255, 255, 0.8); /* Add transparency */
+    padding: 10px;
+    border-radius: 8px;
+    width: 300px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Adjust the slider width to fit the smaller container */
 #year-slider {
     width: 100%;
+}
+
+/* Style the year display */
+#year-display {
+    font-weight: bold;
+    text-align: center;
+}
+
+.leaflet-control {
+    z-index: 500;
+    margin-right: 20px;
 }
 
 /* Add styles for the map containers */
@@ -36,9 +54,10 @@
 }
 
 .legend {
-    background: white;
+    background: rgba(255, 255, 255, 0.8);
     padding: 10px;
     border-radius: 3px;
+    z-index: 500;
 }
 
 .legend i {
@@ -47,12 +66,9 @@
     float: left;
     margin-right: 8px;
     opacity: 0.7;
+    z-index: 500;
 }
 
-.legend .circle {
-    border-radius: 50%;
-    background: #ff0000;
-}
 
 /* Styling for the Sankey diagram */
 #sankey-diagram svg {

@@ -677,6 +677,11 @@ function createChoroplethMap() {
 
             choroplethMap.fitBounds(choroplethLayer.getBounds());
 
+            // Remove existing legend if any
+            if (choroplethMap.legend) {
+                choroplethMap.removeControl(choroplethMap.legend);
+            }
+
             // Add legend at the top right
             var legend = L.control({ position: 'topright' });
 
@@ -695,8 +700,9 @@ function createChoroplethMap() {
                 return div;
             };
 
-
+            // Attach the new legend to the map and save reference to map object
             legend.addTo(choroplethMap);
+            choroplethMap.legend = legend;
         })
         .catch(error => console.error('Error loading topology data:', error));
 }
@@ -808,6 +814,11 @@ function createDotDistributionMap() {
                 dotDistributionMap.fitBounds(group.getBounds());
             }
 
+            // Remove existing legend if any
+            if (dotDistributionMap.legend) {
+                dotDistributionMap.removeControl(dotDistributionMap.legend);
+            }
+
             // Add a legend at the top-right corner with a bigger container
             var legend = L.control({ position: 'topright' });
 
@@ -831,7 +842,9 @@ function createDotDistributionMap() {
                 return div;
             };
 
+            // Attach the new legend to the map and save reference to map object
             legend.addTo(dotDistributionMap);
+            dotDistributionMap.legend = legend;
         })
         .catch(error => console.error("Error fetching topology data:", error));
 }
@@ -902,8 +915,6 @@ function randomPointInBounds(minX, minY, maxX, maxY) {
     return [x, y];
 }
 
-
-
 // Update the year slider event listener
 document.getElementById('year-slider').addEventListener('input', (event) => {
     currentYear = parseInt(event.target.value);
@@ -934,7 +945,7 @@ function showAllVisualizations() {
     document.getElementById('dot-distribution-map').style.display = 'block';
     document.getElementById('sankey-diagram').style.display = 'block';
 
-    // // Initialize and create each chart
+    // Initialize and create each chart
     createBubbleChart();
     createLineChart();
     createChoroplethMap(currentYear);
