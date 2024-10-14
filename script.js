@@ -728,11 +728,6 @@ function createDotDistributionMap() {
             const subnational2Index = sheetColumns5.indexOf("subnational2");
             const tcLossIndex = sheetColumns5.indexOf(`tc_loss_ha_${currentYear}`);
 
-            // Log indices for debugging
-            console.log("Subnational1 Index:", subnational1Index);
-            console.log("Subnational2 Index:", subnational2Index);
-            console.log("Tree Cover Loss Index for year", currentYear, ":", tcLossIndex);
-
             // Group data by subnational1 and subnational2
             const combinedData = {};
 
@@ -753,14 +748,24 @@ function createDotDistributionMap() {
                 combinedData[key].totalDeforestation += deforestationValue; // Aggregate values
             });
 
-            // Log combined data for debugging
-            console.log("Combined Data:", combinedData);
-
             // Group features by state for easy access
             const stateFeatures = new Map();
             geoData.features.forEach(feature => {
                 stateFeatures.set(feature.properties.Name, feature);
             });
+
+            // Define a more visible color scale for the dots (increased contrast between values)
+            function getDotColor(value) {
+                return value > 10000 ? '#081d58' :  // Very Dark Blue
+                    value > 5000  ? '#253494' :  // Darker Blue
+                    value > 2000  ? '#225ea8' :  // Medium Blue
+                    value > 1000  ? '#1d91c0' :  // Lighter Blue
+                    value > 500   ? '#41b6c4' :  // Light Sky Blue
+                    value > 200   ? '#7fcdbb' :  // Light Turquoise
+                    value > 100   ? '#c7e9b4' :  // Pale Blue-Green
+                    value > 50    ? '#edf8b1' :  // Lightest Yellow
+                                    '#f7fbff';   // Almost White for very small values
+            }
 
             // Create markers for the aggregated data
             Object.values(combinedData).forEach(data => {
@@ -779,10 +784,10 @@ function createDotDistributionMap() {
                         if (dotSize > 0) { // Ensure size is valid
                             const marker = L.circleMarker([point[1], point[0]], {
                                 radius: dotSize,  // Use dynamic size based on total deforestation value
-                                fillColor: "#ff0000",
+                                fillColor: getDotColor(totalDeforestation),
                                 color: "#000",
                                 weight: 1,
-                                opacity: 1,
+                                opacity: 0.5,
                                 fillOpacity: 0.8
                             }).addTo(dotDistributionMap);
 
@@ -802,6 +807,31 @@ function createDotDistributionMap() {
                 const group = L.featureGroup(dotMarkers);
                 dotDistributionMap.fitBounds(group.getBounds());
             }
+
+            // Add a legend at the top-right corner with a bigger container
+            var legend = L.control({ position: 'topright' });
+
+            legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend'),
+                    sizes = [50, 100, 500, 1000, 5000, 10000],
+                    labels = [];
+
+                div.style.width = '180px';  // Increase width of legend container
+                div.style.padding = '10px'; // Add padding to make it look cleaner
+
+                div.innerHTML = '<strong>Tree Cover Loss (ha)</strong><br>';
+
+                // Generate a label for each size with a sample circle and color
+                for (var i = 0; i < sizes.length; i++) {
+                    div.innerHTML +=
+                        '<i style="background:' + getDotColor(sizes[i] + 1) + '; width:12px; height:12px; display:inline-block; border-radius:50%; margin-right:8px;"></i> ' +
+                        sizes[i] + (sizes[i + 1] ? '&ndash;' + sizes[i + 1] + '<br>' : '+');
+                }
+
+                return div;
+            };
+
+            legend.addTo(dotDistributionMap);
         })
         .catch(error => console.error("Error fetching topology data:", error));
 }
@@ -907,7 +937,7 @@ function showAllVisualizations() {
     // // Initialize and create each chart
     createBubbleChart();
     createLineChart();
-   createChoroplethMap(currentYear);  // Ensure currentYear is passed where necessary
+    createChoroplethMap(currentYear);
     createDotDistributionMap(currentYear);
     createSankeyDiagram();
 }
