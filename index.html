@@ -36,16 +36,64 @@
                 <p class="mt-2" id="year-display">Selected Year: 2001</p>
             </div>
         </div>
-
     </div>
 
-    <div id="bubble-chart" class="visualization" style="display: block;"></div>
-    <div id="stacked-area-chart" class="visualization" style="display: block;"></div>
-    <div id="choropleth-map" class="visualization" style="display: block;"></div>
-    <div id="dot-distribution-map" class="visualization" style="display: block;"></div>
-    <div id="sankey-diagram" class="visualization" style="display: block;"></div>
+    <!-- Visualization Containers -->
 
+    <!-- Bubble Chart -->
+    <div class="container my-4">
+        <div class="card">
+            <div class="card-body">
+                <h2>Bubble Chart</h2>
+                <p>This chart shows the relationship between forest coverage and deforestation rates over time.</p>
+                <div id="bubble-chart" class="visualization" style="display: block;"></div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Line Chart -->
+    <div class="container-fluid my-4">
+        <div class="card">
+            <div class="card-body">
+                <h2>Line Chart</h2>
+                <p>This chart visualizes deforestation trends by region over the selected period.</p>
+                <div id="line-chart" class="visualization" style="display: block;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Choropleth Map -->
+    <div class="container my-4">
+        <div class="card">
+            <div class="card-body">
+                <h2>Choropleth Map</h2>
+                <p>The choropleth map illustrates the extent of deforestation across different regions in the world.</p>
+                <div id="choropleth-map" class="visualization" style="display: block;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dot Distribution Map -->
+    <div class="container my-4">
+        <div class="card">
+            <div class="card-body">
+                <h2>Dot Distribution Map</h2>
+                <p>This map shows the distribution of deforestation events globally using dots for each incident.</p>
+                <div id="dot-distribution-map" class="visualization" style="display: block;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sankey Diagram -->
+    <div class="container my-4">
+        <div class="card">
+            <div class="card-body">
+                <h2>Sankey Diagram</h2>
+                <p>The Sankey diagram represents the flow of resources related to deforestation, such as timber, land, and carbon emissions.</p>
+                <div id="sankey-diagram" class="visualization" style="display: block;"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap JavaScript Bundle with Popper -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>

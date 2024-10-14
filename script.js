@@ -3,7 +3,7 @@ let choroplethMap = null;
 let dotDistributionMap = null;
 let choroplethLayer = null;
 let dotMarkers = [];
-let currentYear = 2000; // Set current year or adjust as necessary
+let currentYear = 2001; // Set current year or adjust as necessary
 let sheetColumns3 = [];
 let sheetColumns5 = [];
 let sheetData5 = [];
@@ -19,8 +19,7 @@ let sheet1, sheet2, sheet3, sheet4, sheet5, sheet6, sheet7;
 
 // Function to load and process the Excel file
 function loadFile() {
-    // Fetch the Excel file
-    fetch('source/MYS.xlsx')
+    return fetch('source/MYS.xlsx')  // Return the fetch promise
         .then(response => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -63,6 +62,13 @@ function loadFile() {
             sheet7 = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[6]], { header: 1 });
           //  console.log("Sheet 7 Data (Tree Loss Causes):", sheet7); // Corrected log message
 
+            console.log("Sheet 1 Data:", sheet1);
+            console.log("Sheet 2 Data:", sheet2);
+            console.log("Sheet 3 Data:", sheet3);
+            console.log("Sheet 4 Data:", sheet4);
+            console.log("Sheet 5 Data:", sheet5);
+            console.log("Sheet 6 Data:", sheet6);
+            console.log("Sheet 7 Data:", sheet7);
 
         })
         .catch(error => console.error("Error loading file:", error));
@@ -177,14 +183,19 @@ function createBubbleChart() {
     // Create the bubble chart using Vega-Lite
     vegaEmbed('#bubble-chart', {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-        "width": 800,
+        "width": 1200,
         "height": 600,
         "data": {
             "values": mergedData
         },
         "mark": {
             "type": "circle",
-            "tooltip": true // Enable tooltip
+            "tooltip": true,
+            "size": 1000
+        },
+        "autosize": {
+        "type": "fit",
+        "contains": "padding"
         },
         "encoding": {
             "x": {
@@ -240,7 +251,7 @@ function createBubbleChart() {
 }
 
 
-function  createStackedAreaChart() {
+function  createLineChart() {
     // Check if required sheets are loaded
     if (!sheet3 || !sheet7) {
         console.error("Required sheets are not loaded yet");
@@ -354,17 +365,22 @@ function  createStackedAreaChart() {
     }
 
     // Updated chart configuration with new styling
-    vegaEmbed('#stacked-area-chart', {
+    vegaEmbed('#line-chart', {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "width": 1200,
         "height": 400,
         "data": {
             "values": lineData
         },
+        "height": 600,
         "mark": {
             "type": "line", // Changed from "area" to "line"
-            "point": true,  // Optional: add points to the line chart
-            "strokeWidth": 6 // Make the line bold
+            "point": {"filled": true, "size": 40},  // Optional: add points to the line chart
+            "strokeWidth": {"color": "black", "size": 1} // Make the line bold
+        },
+        "autosize": {
+            "type": "fit",  // Make it responsive to the container
+            "contains": "padding"
         },
         "encoding": {
             "x": {
@@ -375,7 +391,7 @@ function  createStackedAreaChart() {
             "y": {
                 "field": "tc_loss_ha",
                 "type": "quantitative",
-                "title": null,  // Remove axis title
+                "title": "Tree Cover Loss (ha)",  // Remove axis title
                 "axis": { "grid": false }  // Remove grid lines
             },
             "color": {
@@ -383,20 +399,15 @@ function  createStackedAreaChart() {
                 "type": "nominal",
                 "scale": {
                     "range": [
-                        "#00BFFF",  // Vivid blue
-                        "#FFA500",  // Bright orange
-                        "#32CD32",  // Bright green
-                        "#FF4500",  // Bright red
-                        "#FFD700",  // Bright yellow
-                        "#FF69B4",  // Bright pink
-                        "#A9A9A9",  // Dark gray
-                        "#FFDEAD"   // Navajo white
+                        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", 
+                        "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#9edae5", "#ffbb78", 
+                        "#98df8a", "#c49c94", "#f7b6d2", "#dbdb8d"
                     ]
                 },
                 "legend": {
                     "title": null,
-                    "orient": "bottom",
-                    "columns": 4
+                    "orient": "top-right",
+                    "anchor": "end"
                 }
             },
             "tooltip": [
@@ -421,7 +432,7 @@ function createSankeyDiagram() {
     console.log("Starting createSankeyDiagram function");
 
     // Ensure data is loaded
-    if (!sheet3 || !sheet4) {
+    if (!sheet4) {
         console.error("Data not loaded. Please run loadFile() first.");
         return;
     }
@@ -429,24 +440,8 @@ function createSankeyDiagram() {
     // Initialize objects to hold causes and impacts
     const causes = {};
     const impacts = {
-        "Tree Cover Loss": 0,
         "Carbon Emissions": 0
     };
-
-    // Process Sheet 3 (Subnational 1 tree cover loss)
-    for (let i = 1; i < sheet3.length; i++) {
-        const row = sheet3[i];
-        const subnational = row[1]; // Subnational area
-        const tc_loss_ha = parseFloat(row[21]); // Tree cover loss (assuming it's the 22nd column)
-
-        if (subnational && !isNaN(tc_loss_ha)) {
-            // Sum up the tree cover loss by subnational area
-            if (!causes[subnational]) {
-                causes[subnational] = { treeLoss: 0, carbonEmissions: 0 };
-            }
-            causes[subnational].treeLoss += tc_loss_ha;
-        }
-    }
 
     // Process Sheet 4 (Subnational 1 carbon data)
     for (let i = 1; i < sheet4.length; i++) {
@@ -465,7 +460,6 @@ function createSankeyDiagram() {
 
     // Calculate total impacts
     Object.keys(causes).forEach((subnational) => {
-        impacts["Tree Cover Loss"] += causes[subnational].treeLoss || 0;
         impacts["Carbon Emissions"] += causes[subnational].carbonEmissions || 0;
     });
 
@@ -481,22 +475,13 @@ function createSankeyDiagram() {
     });
 
     // Add impacts as target nodes
-    nodes.push({ name: "Tree Cover Loss" });
     nodes.push({ name: "Carbon Emissions" });
 
-    const treeCoverLossIndex = nodes.length - 2;
     const carbonEmissionsIndex = nodes.length - 1;
 
     // Create links from causes to impacts
     Object.keys(causes).forEach((subnational) => {
         const index = causeIndices[subnational]; // Retrieve index
-        if (causes[subnational].treeLoss > 0) {
-            links.push({
-                source: index,
-                target: treeCoverLossIndex,
-                value: causes[subnational].treeLoss
-            });
-        }
         if (causes[subnational].carbonEmissions > 0) {
             links.push({
                 source: index,
@@ -558,10 +543,9 @@ function createSankeyDiagram() {
         .append("path")
         .attr("d", d3.sankeyLinkHorizontal())
         .attr("stroke-width", d => Math.max(1, d.width))
-        .attr("stroke", "#000")
         .attr("fill", "none")
         .attr("opacity", 0.5)
-        .on("mouseover", function(event, d) {
+        .on("click", function(event, d) {
             tooltip.html(`Source: ${nodes[d.source].name}<br>Target: ${nodes[d.target].name}<br>Value: ${d.value}`)
                 .style("visibility", "visible");
         })
@@ -659,15 +643,16 @@ function createChoroplethMap() {
                 };
             }
 
+            // Apply the color scale
             function getColor(d) {
-                return d > 10000 ? '#800026' :
-                       d > 5000  ? '#BD0026' :
-                       d > 2000  ? '#E31A1C' :
-                       d > 1000  ? '#FC4E2A' :
-                       d > 500   ? '#FD8D3C' :
-                       d > 200   ? '#FEB24C' :
-                       d > 100   ? '#FED976' :
-                                  '#FFEDA0';
+                return d > 10000 ? '#081d58' :  // Very Dark Blue
+                       d > 5000  ? '#253494' :  // Darker Blue
+                       d > 2000  ? '#225ea8' :  // Medium Blue
+                       d > 1000  ? '#1d91c0' :  // Light Blue
+                       d > 500   ? '#41b6c4' :  // Lighter Blue
+                       d > 200   ? '#7fcdbb' :  // Very Light Blue
+                       d > 100   ? '#c7e9b4' :  // Pale Blue-Green
+                                   '#edf8b1';   // Almost White (for very low values)
             }
 
             choroplethLayer = L.geoJson(geoData, {
@@ -691,10 +676,30 @@ function createChoroplethMap() {
             }).addTo(choroplethMap);
 
             choroplethMap.fitBounds(choroplethLayer.getBounds());
+
+            // Add legend at the top right
+            var legend = L.control({ position: 'topright' });
+
+            legend.onAdd = function (map) {
+                var div = L.DomUtil.create('div', 'info legend'),
+                    grades = [0, 100, 200, 500, 1000, 2000, 5000, 10000],
+                    labels = [];
+
+                // Loop through the density intervals and generate a label with a colored square for each interval
+                for (var i = 0; i < grades.length; i++) {
+                    div.innerHTML +=
+                        '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                        grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+                }
+
+                return div;
+            };
+
+
+            legend.addTo(choroplethMap);
         })
         .catch(error => console.error('Error loading topology data:', error));
 }
-
 
 // Create Dot Distribution Map with Size Based on Hectare Loss
 function createDotDistributionMap() {
@@ -874,7 +879,7 @@ document.getElementById('year-slider').addEventListener('input', (event) => {
     currentYear = parseInt(event.target.value);
     updateYearDisplay();
     createBubbleChart();
-    createStackedAreaChart();
+    createLineChart();
     createChoroplethMap();  
     createDotDistributionMap();
     createSankeyDiagram();
@@ -882,20 +887,26 @@ document.getElementById('year-slider').addEventListener('input', (event) => {
 
 
 // Automatically load the file when the page loads
-window.onload = loadFile, showAllVisualizations();
+window.onload = function () {
+    loadFile().then(() => {
+        // Once data is loaded, create the visualizations
+        showAllVisualizations();
+    });
+};
+
 
 // Function to show all visualizations
 function showAllVisualizations() {
     // Show all visualizations at once
     document.getElementById('bubble-chart').style.display = 'block';
-    document.getElementById('stacked-area-chart').style.display = 'block';
+    document.getElementById('line-chart').style.display = 'block';
     document.getElementById('choropleth-map').style.display = 'block';
     document.getElementById('dot-distribution-map').style.display = 'block';
     document.getElementById('sankey-diagram').style.display = 'block';
 
     // // Initialize and create each chart
     createBubbleChart();
-    createStackedAreaChart();
+    createLineChart();
    createChoroplethMap(currentYear);  // Ensure currentYear is passed where necessary
     createDotDistributionMap(currentYear);
     createSankeyDiagram();
