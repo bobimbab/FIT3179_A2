@@ -17,7 +17,7 @@
 }
 
 #bubble-chart + .text-muted {
-    max-width: 500px;
+    max-width: 550px;
     word-wrap: break-word; 
     text-align: justify;
     float: right;
@@ -90,7 +90,7 @@
 
 .links path {
     fill: none;
-    stroke: #69b3a2;
+    stroke: #69a4b3;
     stroke-opacity: 0.5;
     transition: stroke-opacity 0.3s;
 }
@@ -100,14 +100,14 @@
 }
 
 .nodes rect {
-    fill: #69b3a2;
+    fill: #6995b3;
     stroke: #000;
     stroke-width: 1px;
     transition: fill 0.3s;
 }
 
 .nodes rect:hover {
-    fill: #457b9d;
+    fill: #456a9d;
 }
 
 .nodes text {
@@ -127,8 +127,27 @@
 }
 
 p {
-    max-width: 400px;
+    max-width: 550px;
     word-wrap: break-word;
     line-height: 1.6;
     text-align: justify;
+}
+
+footer {
+    padding: 20px;
+    margin-top: 30px;
+    font-size: 14px;
+}
+
+footer p {
+    margin: 10px 0;
+}
+
+footer a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
 }

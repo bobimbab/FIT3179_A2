@@ -98,7 +98,9 @@
             <div class="card-body">
                 <h2>Sankey Diagram</h2>
                 <p>The Sankey diagram shows the flow of carbon emission due to deforestation in different states in Malaysia throughout the years. In Malaysia, the state that has produces the <b>most carbon emission from deforestation is Sarawak</b>.</p>
-                <div id="sankey-diagram" class="visualization" style="display: block;"></div>
+                <div id="sankey-diagram" class="visualization" style="display: block;">
+                    <div id="tooltip" class="tooltip" style="visibility: hidden; position: absolute;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -106,6 +108,21 @@
     <!-- Bootstrap JavaScript Bundle with Popper -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
+
+    <!-- Footer Section -->
+    <footer class="text-center mt-4">
+        <p><strong>Deforestation Data Visualization 2024</strong></p>
+        <p>Created by <strong>Leong Xin Ru</strong></p>
+        <p><strong>Contact:</strong> xleo0003@student.monash.edu</p>
+        
+        <p><strong>Author of Data:</strong> Global Forest Watch</p>
+        <p><a href="https://www.globalforestwatch.org/dashboards/country/MYS/" target="_blank">
+            https://www.globalforestwatch.org/dashboards/country/MYS/
+        </a></p>
+
+        <p><strong>Last Updated:</strong> 14th October 2024</p>
+    </footer>
+
 </body>
 
 </html>

@@ -545,15 +545,14 @@ function createSankeyDiagram() {
         .attr("stroke-width", d => Math.max(1, d.width))
         .attr("fill", "none")
         .attr("opacity", 0.5)
-        .on("click", function(event, d) {
-            tooltip.html(`Source: ${nodes[d.source].name}<br>Target: ${nodes[d.target].name}<br>Value: ${d.value}`)
-                .style("visibility", "visible");
-        })
-        .on("mousemove", function(event) {
-            tooltip.style("top", (event.pageY - 10) + "px")
+        .on("mouseover", function (event, d) {
+            tooltip.style("visibility", "visible")
+                .html(`Source: ${nodes[d.source].name}<br>Target: ${nodes[d.target].name}<br>Value: ${d.value}`)
+                .style("top", (event.pageY - 10) + "px")
+                .style("top", (event.pageY + 10) + "px")
                 .style("left", (event.pageX + 10) + "px");
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.style("visibility", "hidden");
         });
 
@@ -574,15 +573,13 @@ function createSankeyDiagram() {
         .attr("width", d => d.x1 - d.x0)
         .attr("fill", "#ccc")
         .attr("stroke", "#000")
-        .on("mouseover", function(event, d) {
-            tooltip.html(`Name: ${d.name}<br>Value: ${d.value || 0}`)
-                .style("visibility", "visible");
-        })
-        .on("mousemove", function(event) {
-            tooltip.style("top", (event.pageY - 10) + "px")
+        .on("mouseover", function (event, d) {
+            tooltip.style("visibility", "visible")
+                .html(`Name: ${d.name}<br>Value: ${d.value || 0}`)
+                .style("top", (event.pageY - 10) + "px")
                 .style("left", (event.pageX + 10) + "px");
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
             tooltip.style("visibility", "hidden");
         });
 
