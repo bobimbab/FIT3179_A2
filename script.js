@@ -251,20 +251,16 @@ function createBubbleChart() {
 }
 
 
-function  createLineChart() {
+function createLineChart() {
     // Check if required sheets are loaded
     if (!sheet3 || !sheet7) {
         console.error("Required sheets are not loaded yet");
         return;
     }
 
-    // Log sample data from both sheets for debugging
-    console.log("Sheet 3 data sample:", sheet3.slice(0, 5));
-    console.log("Sheet 7 data sample:", sheet7.slice(0, 5));
+    const lineData = [];
 
-    const causesData = {};
-
-    // Process Sheet 3 - Tree cover loss by subnational area
+    // Process Sheet 3 - Tree cover loss by subnational area (aggregate total loss)
     for (let i = 1; i < sheet3.length; i++) {
         const row = sheet3[i];
         if (!row || row.length < 2) continue;
@@ -278,23 +274,14 @@ function  createLineChart() {
 
             if (isNaN(treeLossHa)) continue;
 
-            if (!causesData[year]) {
-                causesData[year] = {};
-            }
-            if (!causesData[year][state]) {
-                causesData[year][state] = {
-                    totalLoss: 0,
-                    causes: {}
-                };
-            }
-
-            // Accumulate total loss per state and year
-            causesData[year][state].totalLoss += treeLossHa;
+            lineData.push({
+                year: year,
+                subnational: state,
+                totalLoss: treeLossHa,
+                causes: {}
+            });
         }
     }
-
-    // Log intermediate state data
-    console.log("Processed causesData:", JSON.stringify(causesData, null, 2));
 
     // Process Sheet 7 - Tree loss causes
     const sheet7Headers = sheet7[0];
@@ -302,107 +289,80 @@ function  createLineChart() {
     const driverIndex = sheet7Headers.findIndex(header => header.includes('driver'));
     const lossIndex = sheet7Headers.findIndex(header => header.includes('ha'));
 
-    console.log("Sheet 7 column indices - Year:", yearIndex, "Driver:", driverIndex, "Loss:", lossIndex);
-
-    // Process each row in Sheet 7
     for (let i = 1; i < sheet7.length; i++) {
         const row = sheet7[i];
         if (!row || row.length <= Math.max(yearIndex, driverIndex, lossIndex)) continue;
 
         const year = parseInt(row[yearIndex]);
-        const cause = row[driverIndex];
+        const cause = row[driverIndex] || 'Unknown';  // If no cause, default to 'Unknown'
         const lossHa = parseFloat(row[lossIndex]);
 
-        if (isNaN(year) || !cause || isNaN(lossHa) || !causesData[year]) continue;
+        if (isNaN(year) || isNaN(lossHa)) continue;
 
-        // Distribute the loss across all states
-        Object.keys(causesData[year]).forEach(state => {
-            if (!causesData[year][state].causes[cause]) {
-                causesData[year][state].causes[cause] = 0;
-            }
-
-            // Calculate total loss for the year across all states
-            const totalYearLoss = Object.values(causesData[year])
-                .reduce((sum, stateData) => sum + stateData.totalLoss, 0);
-
-            if (totalYearLoss > 0) {
-                // Proportionally distribute the loss based on each state's total loss
-                const proportionOfTotalLoss = causesData[year][state].totalLoss / totalYearLoss;
-                causesData[year][state].causes[cause] += lossHa * proportionOfTotalLoss;
-            }
-        });
+        // Find the corresponding entry in lineData
+        const lineEntry = lineData.find(d => d.year === year && d.subnational === row[1]);
+        if (lineEntry) {
+            lineEntry.causes[cause] = (lineEntry.causes[cause] || 0) + lossHa;
+        }
     }
 
-    // Convert causesData into lineData
-    const lineData = [];
-    const statesInLineData = new Set();
+    // Convert causes object to a string for tooltips
+    const formattedLineData = lineData.map(d => {
+        const causeString = Object.keys(d.causes).length > 0
+            ? Object.entries(d.causes)
+                .map(([cause, amount]) => `${cause}: ${amount.toFixed(2)} ha`)
+                .join(', ')
+            : 'Unknown: No specific cause data';  // If no causes, set default message
 
-    Object.entries(causesData).forEach(([year, yearData]) => {
-        Object.entries(yearData).forEach(([state, stateData]) => {
-            Object.entries(stateData.causes).forEach(([cause, tcLossHa]) => {
-                if (tcLossHa > 0) {
-                    lineData.push({
-                        year: parseInt(year),
-                        subnational: state,
-                        cause: cause,
-                        tc_loss_ha: tcLossHa
-                    });
-                    statesInLineData.add(state);
-                }
-            });
-        });
+        return {
+            ...d,
+            causeString: causeString
+        };
     });
 
-    // Log final line data for debugging
-    console.log("Final lineData:", JSON.stringify(lineData, null, 2));
-    console.log("States in final line data:", Array.from(statesInLineData));
-    console.log("Total number of data points:", lineData.length);
+    // Define a consistent color scale for states
+    const colorScale = {
+        "Johor": "#1f77b4", "Kedah": "#ff7f0e", "Kelantan": "#2ca02c", "Kuala Lumpur": "#d62728",
+        "Labuan": "#9467bd", "Melaka": "#8c564b", "Negeri Sembilan": "#e377c2", "Pahang": "#7f7f7f",
+        "Penang": "#bcbd22", "Perak": "#17becf", "Perlis": "#9edae5", "Putrajaya": "#ffbb78",
+        "Sabah": "#98df8a", "Sarawak": "#ff9896", "Selangor": "#c49c94", "Terengganu": "#f7b6d2"
+    };
 
-    // Check if there's any data to render
-    if (lineData.length === 0) {
-        console.warn("No data available for the line chart.");
-        return;
-    }
-
-    // Updated chart configuration with new styling
+    // Create the Vega-Lite line chart with total loss
     vegaEmbed('#line-chart', {
         "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
         "width": 1200,
         "height": 400,
         "data": {
-            "values": lineData
+            "values": formattedLineData
         },
-        "height": 600,
         "mark": {
-            "type": "line", // Changed from "area" to "line"
-            "point": {"filled": true, "size": 40},  // Optional: add points to the line chart
-            "strokeWidth": {"color": "black", "size": 1} // Make the line bold
+            "type": "line",
+            "point": {"filled": true, "size": 40},
+            "strokeWidth": {"color": "black", "size": 1}
         },
         "autosize": {
-            "type": "fit",  // Make it responsive to the container
+            "type": "fit",
             "contains": "padding"
         },
         "encoding": {
             "x": {
                 "field": "year",
                 "type": "ordinal",
-                "title": null  // Remove axis title
+                "title": null
             },
             "y": {
-                "field": "tc_loss_ha",
+                "field": "totalLoss",
                 "type": "quantitative",
-                "title": "Tree Cover Loss (ha)",  // Remove axis title
-                "axis": { "grid": false }  // Remove grid lines
+                "title": "Total Tree Cover Loss (ha)",
+                "axis": { "grid": false }
             },
             "color": {
                 "field": "subnational",
                 "type": "nominal",
                 "scale": {
-                    "range": [
-                        "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", 
-                        "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#9edae5", "#ffbb78", 
-                        "#98df8a", "#c49c94", "#f7b6d2", "#dbdb8d"
-                    ]
+                    "domain": Object.keys(colorScale),
+                    "range": Object.values(colorScale)
                 },
                 "legend": {
                     "title": null,
@@ -412,13 +372,13 @@ function  createLineChart() {
             },
             "tooltip": [
                 { "field": "year", "title": "Year" },
-                { "field": "tc_loss_ha", "title": "Tree Cover Loss (ha)", "format": ".2f" },
+                { "field": "totalLoss", "title": "Total Tree Cover Loss (ha)", "format": ".2f" },
                 { "field": "subnational", "title": "State" },
-                { "field": "cause", "title": "Cause of Loss" }  // Add cause to tooltip
+                { "field": "causeString", "title": "Causes" }
             ]
         },
         "config": {
-            "view": { "stroke": null },  // Remove chart border
+            "view": { "stroke": null },
             "axis": {
                 "labelFont": "Arial",
                 "labelFontSize": 12
